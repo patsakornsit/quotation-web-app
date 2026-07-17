@@ -304,9 +304,41 @@ table.items tbody td:first-child {
 }
 
 @media print {
-  body * { visibility: hidden; }
-  .paper-side, .paper-side * { visibility: visible; }
-  .paper-side { position: absolute; inset: 0; padding: 24px 30px; background-image: none; overflow: visible; }
+  @page { size: Letter portrait; margin: 0; }
+  html, body, #root {
+    width: 8.5in;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    background: var(--paper, #EDE6D3);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body { overflow: visible; }
+  .ledger-app {
+    display: block;
+    width: 8.5in;
+    min-height: 11in;
+    overflow: visible;
+    background: var(--paper);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .chat-side { display: none !important; }
+  .paper-side {
+    position: static;
+    width: 8.5in;
+    min-height: 11in;
+    margin: 0;
+    padding: 12mm 14mm;
+    box-sizing: border-box;
+    background-color: var(--paper);
+    background-image: none;
+    overflow: visible;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   .paper-toolbar { display: none; }
   .quote-summary { display: none; }
   .deposit-options { display: none; }
@@ -318,10 +350,17 @@ table.items tbody td:first-child {
   .template-modal { display: none !important; }
   .history-modal { display: none !important; }
   .receipt-actions { display: none; }
-  body.printing-receipt .paper-side { visibility: hidden !important; }
-  body.printing-receipt .receipt-modal, body.printing-receipt .receipt-modal * { visibility: visible !important; }
-  body.printing-receipt .receipt-modal { position: absolute; inset: 0; padding: 0; background: white; display: block; }
-  body.printing-receipt .receipt-sheet { width: 100%; box-shadow: none; }
+  body.printing-receipt .paper-side { display: none !important; }
+  body.printing-receipt .receipt-modal {
+    position: static;
+    width: 8.5in;
+    min-height: 11in;
+    padding: 12mm 14mm;
+    box-sizing: border-box;
+    background: white;
+    display: block;
+  }
+  body.printing-receipt .receipt-sheet { width: 100%; padding: 0; box-shadow: none; }
 }
 `;
 
