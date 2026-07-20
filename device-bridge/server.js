@@ -309,8 +309,11 @@ function parseAssistantJson(content) {
 }
 
 const allowedQuotationActions = new Set([
-  'new_quotation', 'set_client', 'add_item', 'update_item', 'remove_item', 'set_note',
-  'set_deposit', 'set_status', 'set_tax_rate', 'set_currency', 'set_confirmation_name',
+  'new_quotation', 'set_client', 'set_quote_number', 'add_item', 'update_item', 'remove_item',
+  'clear_items', 'set_note', 'set_payment_comment', 'set_deposit', 'set_deposit_paid',
+  'set_status', 'set_tax_rate', 'set_currency', 'set_confirmation_name', 'set_signature_text',
+  'remove_signature_image', 'set_template_field', 'reset_template', 'open_summary', 'open_history',
+  'open_template_editor', 'load_quotation', 'create_receipt', 'export_pdf',
 ]);
 
 app.post('/api/quotation-assistant', async (req, res) => {
@@ -329,18 +332,36 @@ Return exactly one JSON object with this shape: {"scope":"quotation|unrelated","
 Allowed actions:
 {"type":"new_quotation"}
 {"type":"set_client","value":"name"}
+{"type":"set_quote_number","value":"Q-1234"}
 {"type":"add_item","name":"description","qty":1,"price":100}
 {"type":"update_item","index":1,"name":"optional item lookup","newName":"optional","qty":2,"price":150}
 {"type":"remove_item","index":1,"name":"optional lookup"}
+{"type":"clear_items"}
 {"type":"set_note","value":"text"}
+{"type":"set_payment_comment","value":"text"}
 {"type":"set_deposit","enabled":true,"schedule":[30,70],"comment":"optional"}
+{"type":"set_deposit_paid","index":1,"paid":true}
 {"type":"set_status","value":"Draft|Sent|Accepted|Rejected|Receipt created|Paid"}
 {"type":"set_tax_rate","value":7}
 {"type":"set_currency","value":"$"}
 {"type":"set_confirmation_name","value":"name"}
+{"type":"set_signature_text","value":"typed signature"}
+{"type":"remove_signature_image"}
+{"type":"set_template_field","field":"title|tagline|companyName|footer|paperColor|inkColor|accentColor|stampColor","value":"text or #RRGGBB"}
+{"type":"reset_template"}
+{"type":"open_summary"}
+{"type":"open_history"}
+{"type":"open_template_editor"}
+{"type":"load_quotation","id":1}
+{"type":"create_receipt"}
+{"type":"export_pdf"}
 The words "collection", "collections", "payment term", "installment", and "deposit" refer to payment terms unless the user explicitly says they are a billable line item.
 "Use 3 collections", "change deposit to 3 collections", or similar MUST produce {"type":"set_deposit","enabled":true,"schedule":[20,50,30]} and MUST NOT add or update an item.
 "Use 2 collections" MUST produce {"type":"set_deposit","enabled":true,"schedule":[30,70]} and MUST NOT add or update an item.
+"Comment" or "payment comment" means the Payment comment beside the deposit controls and MUST use set_payment_comment. "Quotation note" or "general note" MUST use set_note.
+Changing a payment comment MUST NOT change deposit enabled state or the deposit schedule.
+Use an empty string to clear a note, payment comment, signature, or other text field when the user asks to remove or clear it.
+Receipt and PDF actions must be returned alone. If the user asks to edit fields and immediately export or create a receipt, apply only the edit actions and tell them to request the export or receipt after the quotation updates.
 Use current quotation values when the user refers to an existing item or says words like it, first, last, price, quantity, client, or deposit.
 For a new quotation, include new_quotation first and then actions for every detail supplied. Use qty 1 and price 0 only when omitted.
 Do not invent client names, item descriptions, or nonzero prices. Do not create actions outside the allowed list.`;

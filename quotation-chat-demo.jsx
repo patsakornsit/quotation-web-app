@@ -395,6 +395,8 @@ const initialMessage = {
 };
 
 const SUGGESTIONS = [
+  "Open previous quotations",
+  "Open summary",
   "create quotation name: Patsakorn Sit subject: Website design qty: 1 price: 500",
   "client Acme Renovations",
   "add Site survey, 1, 450",
@@ -735,6 +737,9 @@ export default function LedgerQuotationDemo() {
         case "set_client":
           setClient(String(action.value || "").trim());
           break;
+        case "set_quote_number":
+          setQuoteNo(String(action.value || "").trim().slice(0, 24));
+          break;
         case "add_item":
           setItems((current) => [...current, {
             name: String(action.name || "Professional service").trim(),
@@ -765,13 +770,19 @@ export default function LedgerQuotationDemo() {
             return current.filter((item) => !item.name.toLowerCase().includes(name));
           });
           break;
+        case "clear_items":
+          setItems([]);
+          break;
         case "set_note":
           setNote(String(action.value || "").trim());
+          break;
+        case "set_payment_comment":
+          setDepositComment(String(action.value || "").trim());
           break;
         case "set_deposit": {
           const enabled = action.enabled !== false;
           setDepositEnabled(enabled);
-          setDepositComment(String(action.comment || "").trim());
+          if (action.comment != null) setDepositComment(String(action.comment).trim());
           if (!enabled) {
             setDepositPaymentStatuses([false]);
             break;
@@ -784,16 +795,57 @@ export default function LedgerQuotationDemo() {
           break;
         }
         case "set_status":
-          setStatus(String(action.value || "Draft").trim());
+          if (["Draft", "Sent", "Accepted", "Rejected", "Receipt created", "Paid"].includes(String(action.value))) {
+            setStatus(String(action.value));
+          }
           break;
         case "set_tax_rate":
           updateTemplate("taxRate", Math.max(0, Number(action.value) || 0));
           break;
         case "set_currency":
-          updateTemplate("currency", String(action.value || "$"));
+          updateTemplate("currency", String(action.value || "$").slice(0, 4));
           break;
         case "set_confirmation_name":
           setConfirmationName(String(action.value || "").trim());
+          break;
+        case "set_signature_text":
+          setConfirmationSignature(String(action.value || "").trim());
+          break;
+        case "remove_signature_image":
+          setConfirmationSignatureImage("");
+          break;
+        case "set_deposit_paid":
+          setDepositPaymentStatuses((current) => current.map((paid, index) => index === Math.max(0, Number(action.index || 1) - 1) ? action.paid !== false : paid));
+          break;
+        case "set_template_field": {
+          const allowedFields = new Set(["title", "tagline", "companyName", "footer", "paperColor", "inkColor", "accentColor", "stampColor"]);
+          const field = String(action.field || "");
+          if (!allowedFields.has(field)) break;
+          const value = String(action.value || "").trim();
+          if (field.endsWith("Color") && !/^#[0-9a-f]{6}$/i.test(value)) break;
+          updateTemplate(field, value);
+          break;
+        }
+        case "reset_template":
+          setTemplate(DEFAULT_TEMPLATE);
+          break;
+        case "open_summary":
+          await openSummaryDashboard();
+          break;
+        case "open_history":
+          await openQuotationHistory();
+          break;
+        case "open_template_editor":
+          setShowTemplateEditor(true);
+          break;
+        case "load_quotation":
+          if (Number.isInteger(Number(action.id)) && Number(action.id) > 0) await loadPreviousQuotation(Number(action.id));
+          break;
+        case "create_receipt":
+          await createReceipt();
+          break;
+        case "export_pdf":
+          await exportPdf();
           break;
         default:
           break;
@@ -806,9 +858,18 @@ export default function LedgerQuotationDemo() {
     if (!text) return;
     addMsg(text, "user");
     const lower = text.toLowerCase();
+    const normalizedNavigationText = lower.replace(/\bopem\b|\boppen\b/g, "open");
     const naturalQuotation = parseNaturalQuotationRequest(text);
     const collectionMatch = text.match(/\b([23])\s*(?:payment\s+)?collections?\b/i)
       || text.match(/\bcollections?\s*(?:is|to|:|=)?\s*([23])\b/i);
+    const savedQuotationMatch = normalizedNavigationText.match(/\b(?:open|load)\s+(?:previous|saved)?\s*quotation\s*(?:id|#)?\s*(\d+)\b/i);
+    const hasOpenIntent = /\b(?:open|show|view|load|go\s+to)\b/i.test(normalizedNavigationText);
+    const openHistoryRequested = hasOpenIntent && (
+      /\b(?:previous|saved)\b[\s\S]*\bquotations?\b/i.test(normalizedNavigationText)
+      || /\bquotations?\b[\s\S]*\b(?:previous|saved|history)\b/i.test(normalizedNavigationText)
+      || /\bhistory\b/i.test(normalizedNavigationText)
+    );
+    const openSummaryRequested = hasOpenIntent && /\bsummary\b/i.test(normalizedNavigationText);
 
     if (naturalQuotation) {
       setClient(naturalQuotation.client);
@@ -830,6 +891,14 @@ export default function LedgerQuotationDemo() {
         `Created a new quotation for "${naturalQuotation.client}" with "${naturalQuotation.subject}" — ${naturalQuotation.qty} × ${money(naturalQuotation.price, template.currency)}. Unspecified settings use the defaults.`,
         "bot"
       );
+    } else if (savedQuotationMatch) {
+      await loadPreviousQuotation(Number(savedQuotationMatch[1]));
+    } else if (openHistoryRequested) {
+      await openQuotationHistory();
+      addMsg("Opened previous quotations.", "bot");
+    } else if (openSummaryRequested) {
+      await openSummaryDashboard();
+      addMsg("Opened the quotation summary.", "bot");
     } else if (collectionMatch) {
       const collections = Number(collectionMatch[1]);
       const schedule = [...DEPOSIT_SCHEDULES[collections]];
@@ -931,6 +1000,19 @@ export default function LedgerQuotationDemo() {
         depositEnabled,
         depositComment,
         depositSchedule,
+        depositPaymentStatuses,
+        confirmationName,
+        confirmationSignature,
+        template: {
+          title: template.title,
+          tagline: template.tagline,
+          companyName: template.companyName,
+          footer: template.footer,
+          paperColor: template.paperColor,
+          inkColor: template.inkColor,
+          accentColor: template.accentColor,
+          stampColor: template.stampColor,
+        },
       });
       if (!assistantResult.ok) {
         addMsg(`I could not interpret that quotation request: ${assistantResult.error}`, "bot");
