@@ -1,9 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
-const { DatabaseSync } = require('node:sqlite');
+const sql = require('mssql');
 require('dotenv').config();
 
 const app = express();
@@ -12,82 +10,73 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
-const dataDirectory = path.join(__dirname, 'data');
-const databasePath = process.env.QUOTATION_DB_PATH
-  ? path.resolve(process.env.QUOTATION_DB_PATH)
-  : path.join(dataDirectory, 'quotations.db');
-fs.mkdirSync(path.dirname(databasePath), { recursive: true });
-const db = new DatabaseSync(databasePath);
-db.exec('PRAGMA foreign_keys = ON');
-db.exec(`
-  CREATE TABLE IF NOT EXISTS quotations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    quote_number TEXT NOT NULL,
-    document_type TEXT NOT NULL DEFAULT 'quotation',
-    client TEXT NOT NULL,
-    status TEXT NOT NULL,
-    subtotal REAL NOT NULL,
-    tax REAL NOT NULL,
-    total REAL NOT NULL,
-    currency TEXT NOT NULL,
-    tax_rate REAL NOT NULL,
-    deposit_rate REAL NOT NULL DEFAULT 30,
-    deposit_amount REAL NOT NULL DEFAULT 0,
-    deposit_schedule_json TEXT NOT NULL DEFAULT '[]',
-    deposit_payment_statuses_json TEXT NOT NULL DEFAULT '[]',
-    confirmation_name TEXT NOT NULL DEFAULT '',
-    confirmation_signature TEXT NOT NULL DEFAULT '',
-    confirmation_signature_image TEXT NOT NULL DEFAULT '',
-    note TEXT DEFAULT '',
-    template_json TEXT DEFAULT '{}',
-    exported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
+const sqlConfig = {
+  server: process.env.SQL_SERVER || 'localhost',
+  port: Number(process.env.SQL_PORT) || 1433,
+  database: process.env.SQL_DATABASE || 'QuotationApp',
+  user: process.env.SQL_USER,
+  password: process.env.SQL_PASSWORD,
+  options: {
+    encrypt: String(process.env.SQL_ENCRYPT || 'false').toLowerCase() === 'true',
+    trustServerCertificate: String(process.env.SQL_TRUST_SERVER_CERTIFICATE || 'true').toLowerCase() === 'true',
+    enableArithAbort: true,
+  },
+  pool: { max: 10, min: 0, idleTimeoutMillis: 30000 },
+};
 
-  CREATE TABLE IF NOT EXISTS quotation_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    quotation_id INTEGER NOT NULL,
-    item_name TEXT NOT NULL,
-    quantity REAL NOT NULL,
-    unit_price REAL NOT NULL,
-    amount REAL NOT NULL,
-    FOREIGN KEY (quotation_id) REFERENCES quotations(id) ON DELETE CASCADE
-  );
-`);
-
-const quotationColumns = new Set(db.prepare('PRAGMA table_info(quotations)').all().map((column) => column.name));
-if (!quotationColumns.has('deposit_rate')) {
-  db.exec('ALTER TABLE quotations ADD COLUMN deposit_rate REAL NOT NULL DEFAULT 30');
-}
-if (!quotationColumns.has('deposit_amount')) {
-  db.exec('ALTER TABLE quotations ADD COLUMN deposit_amount REAL NOT NULL DEFAULT 0');
-}
-if (!quotationColumns.has('deposit_schedule_json')) {
-  db.exec("ALTER TABLE quotations ADD COLUMN deposit_schedule_json TEXT NOT NULL DEFAULT '[]'");
-}
-if (!quotationColumns.has('confirmation_name')) {
-  db.exec("ALTER TABLE quotations ADD COLUMN confirmation_name TEXT NOT NULL DEFAULT ''");
-}
-if (!quotationColumns.has('deposit_payment_statuses_json')) {
-  db.exec("ALTER TABLE quotations ADD COLUMN deposit_payment_statuses_json TEXT NOT NULL DEFAULT '[]'");
-}
-if (!quotationColumns.has('confirmation_signature')) {
-  db.exec("ALTER TABLE quotations ADD COLUMN confirmation_signature TEXT NOT NULL DEFAULT ''");
-}
-if (!quotationColumns.has('confirmation_signature_image')) {
-  db.exec("ALTER TABLE quotations ADD COLUMN confirmation_signature_image TEXT NOT NULL DEFAULT ''");
+if (process.env.SQL_INSTANCE) {
+  delete sqlConfig.port;
+  sqlConfig.options.instanceName = process.env.SQL_INSTANCE;
 }
 
-const insertQuotation = db.prepare(`
-  INSERT INTO quotations (
-    quote_number, document_type, client, status, subtotal, tax, total,
-    currency, tax_rate, deposit_rate, deposit_amount, deposit_schedule_json, deposit_payment_statuses_json,
-    confirmation_name, confirmation_signature, confirmation_signature_image, note, template_json
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`);
-const insertQuotationItem = db.prepare(`
-  INSERT INTO quotation_items (quotation_id, item_name, quantity, unit_price, amount)
-  VALUES (?, ?, ?, ?, ?)
-`);
+let dbPool;
+
+async function initializeDatabase() {
+  dbPool = await sql.connect(sqlConfig);
+  await dbPool.request().query(`
+    IF OBJECT_ID(N'dbo.quotations', N'U') IS NULL
+    BEGIN
+      CREATE TABLE dbo.quotations (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        quote_number NVARCHAR(100) NOT NULL,
+        document_type NVARCHAR(30) NOT NULL CONSTRAINT DF_quotations_document_type DEFAULT 'quotation',
+        client NVARCHAR(300) NOT NULL,
+        status NVARCHAR(100) NOT NULL,
+        subtotal DECIMAL(18,2) NOT NULL,
+        tax DECIMAL(18,2) NOT NULL,
+        total DECIMAL(18,2) NOT NULL,
+        currency NVARCHAR(10) NOT NULL,
+        tax_rate DECIMAL(9,4) NOT NULL,
+        deposit_rate DECIMAL(9,4) NOT NULL CONSTRAINT DF_quotations_deposit_rate DEFAULT 30,
+        deposit_amount DECIMAL(18,2) NOT NULL CONSTRAINT DF_quotations_deposit_amount DEFAULT 0,
+        deposit_enabled BIT NOT NULL CONSTRAINT DF_quotations_deposit_enabled DEFAULT 1,
+        deposit_comment NVARCHAR(MAX) NOT NULL CONSTRAINT DF_quotations_deposit_comment DEFAULT '',
+        deposit_schedule_json NVARCHAR(MAX) NOT NULL CONSTRAINT DF_quotations_deposit_schedule DEFAULT '[]',
+        deposit_payment_statuses_json NVARCHAR(MAX) NOT NULL CONSTRAINT DF_quotations_payment_statuses DEFAULT '[]',
+        confirmation_name NVARCHAR(300) NOT NULL CONSTRAINT DF_quotations_confirmation_name DEFAULT '',
+        confirmation_signature NVARCHAR(MAX) NOT NULL CONSTRAINT DF_quotations_confirmation_signature DEFAULT '',
+        confirmation_signature_image NVARCHAR(MAX) NOT NULL CONSTRAINT DF_quotations_signature_image DEFAULT '',
+        note NVARCHAR(MAX) NULL,
+        template_json NVARCHAR(MAX) NULL,
+        exported_at DATETIME2 NOT NULL CONSTRAINT DF_quotations_exported_at DEFAULT SYSUTCDATETIME()
+      );
+    END;
+
+    IF OBJECT_ID(N'dbo.quotation_items', N'U') IS NULL
+    BEGIN
+      CREATE TABLE dbo.quotation_items (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        quotation_id INT NOT NULL,
+        item_name NVARCHAR(500) NOT NULL,
+        quantity DECIMAL(18,4) NOT NULL,
+        unit_price DECIMAL(18,2) NOT NULL,
+        amount DECIMAL(18,2) NOT NULL,
+        CONSTRAINT FK_quotation_items_quotations FOREIGN KEY (quotation_id)
+          REFERENCES dbo.quotations(id) ON DELETE CASCADE
+      );
+    END;
+  `);
+}
 
 const OPENCLAW_API_URL = process.env.OPENCLAW_API_URL;
 const OPENCLAW_API_KEY = process.env.OPENCLAW_API_KEY;
@@ -123,129 +112,173 @@ if (OPENCLAW_MODE === 'serial') {
   }
 }
 
-app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.get('/api/health', (req, res) => res.json({ ok: true, database: dbPool?.connected ? 'connected' : 'disconnected' }));
 
-app.post('/api/quotations', (req, res) => {
+app.post('/api/quotations', async (req, res) => {
   const record = req.body || {};
   const items = Array.isArray(record.items) ? record.items : [];
   if (!record.quoteNumber || !record.client || items.length === 0) {
     return res.status(400).json({ ok: false, error: 'quoteNumber, client, and at least one item are required' });
   }
-
+  const transaction = new sql.Transaction(dbPool);
   try {
-    db.exec('BEGIN');
-    const result = insertQuotation.run(
-      String(record.quoteNumber),
-      record.documentType === 'receipt' ? 'receipt' : 'quotation',
-      String(record.client),
-      String(record.status || 'Draft'),
-      Number(record.subtotal) || 0,
-      Number(record.tax) || 0,
-      Number(record.total) || 0,
-      String(record.currency || '$'),
-      Number(record.taxRate) || 0,
-      Math.min(100, Math.max(0, Number(record.depositRate) || 0)),
-      Math.max(0, Number(record.depositAmount) || 0),
-      JSON.stringify(Array.isArray(record.depositSchedule) ? record.depositSchedule : []),
-      JSON.stringify(Array.isArray(record.depositPaymentStatuses) ? record.depositPaymentStatuses.map(Boolean) : []),
-      String(record.confirmationName || ''),
-      String(record.confirmationSignature || ''),
-      String(record.confirmationSignatureImage || ''),
-      String(record.note || ''),
-      JSON.stringify(record.template || {})
-    );
-    const quotationId = Number(result.lastInsertRowid);
+    await transaction.begin();
+    const request = new sql.Request(transaction);
+    request.input('quoteNumber', sql.NVarChar(100), String(record.quoteNumber));
+    request.input('documentType', sql.NVarChar(30), record.documentType === 'receipt' ? 'receipt' : 'quotation');
+    request.input('client', sql.NVarChar(300), String(record.client));
+    request.input('status', sql.NVarChar(100), String(record.status || 'Draft'));
+    request.input('subtotal', sql.Decimal(18, 2), Number(record.subtotal) || 0);
+    request.input('tax', sql.Decimal(18, 2), Number(record.tax) || 0);
+    request.input('total', sql.Decimal(18, 2), Number(record.total) || 0);
+    request.input('currency', sql.NVarChar(10), String(record.currency || '$'));
+    request.input('taxRate', sql.Decimal(9, 4), Number(record.taxRate) || 0);
+    request.input('depositRate', sql.Decimal(9, 4), Math.min(100, Math.max(0, Number(record.depositRate) || 0)));
+    request.input('depositAmount', sql.Decimal(18, 2), Math.max(0, Number(record.depositAmount) || 0));
+    request.input('depositEnabled', sql.Bit, record.depositEnabled === false ? 0 : 1);
+    request.input('depositComment', sql.NVarChar(sql.MAX), String(record.depositComment || ''));
+    request.input('depositSchedule', sql.NVarChar(sql.MAX), JSON.stringify(Array.isArray(record.depositSchedule) ? record.depositSchedule : []));
+    request.input('paymentStatuses', sql.NVarChar(sql.MAX), JSON.stringify(Array.isArray(record.depositPaymentStatuses) ? record.depositPaymentStatuses.map(Boolean) : []));
+    request.input('confirmationName', sql.NVarChar(300), String(record.confirmationName || ''));
+    request.input('confirmationSignature', sql.NVarChar(sql.MAX), String(record.confirmationSignature || ''));
+    request.input('signatureImage', sql.NVarChar(sql.MAX), String(record.confirmationSignatureImage || ''));
+    request.input('note', sql.NVarChar(sql.MAX), String(record.note || ''));
+    request.input('template', sql.NVarChar(sql.MAX), JSON.stringify(record.template || {}));
+    const result = await request.query(`
+      INSERT INTO dbo.quotations (
+        quote_number, document_type, client, status, subtotal, tax, total, currency, tax_rate,
+        deposit_rate, deposit_amount, deposit_enabled, deposit_comment, deposit_schedule_json,
+        deposit_payment_statuses_json, confirmation_name, confirmation_signature,
+        confirmation_signature_image, note, template_json
+      )
+      OUTPUT INSERTED.id
+      VALUES (@quoteNumber, @documentType, @client, @status, @subtotal, @tax, @total, @currency,
+        @taxRate, @depositRate, @depositAmount, @depositEnabled, @depositComment, @depositSchedule,
+        @paymentStatuses, @confirmationName, @confirmationSignature, @signatureImage, @note, @template)
+    `);
+    const quotationId = Number(result.recordset[0].id);
     for (const item of items) {
       const quantity = Number(item.qty) || 0;
       const unitPrice = Number(item.price) || 0;
-      insertQuotationItem.run(quotationId, String(item.name || 'Item'), quantity, unitPrice, quantity * unitPrice);
+      const itemRequest = new sql.Request(transaction);
+      itemRequest.input('quotationId', sql.Int, quotationId);
+      itemRequest.input('itemName', sql.NVarChar(500), String(item.name || 'Item'));
+      itemRequest.input('quantity', sql.Decimal(18, 4), quantity);
+      itemRequest.input('unitPrice', sql.Decimal(18, 2), unitPrice);
+      itemRequest.input('amount', sql.Decimal(18, 2), quantity * unitPrice);
+      await itemRequest.query(`
+        INSERT INTO dbo.quotation_items (quotation_id, item_name, quantity, unit_price, amount)
+        VALUES (@quotationId, @itemName, @quantity, @unitPrice, @amount)
+      `);
     }
-    db.exec('COMMIT');
+    await transaction.commit();
     return res.status(201).json({ ok: true, id: quotationId });
   } catch (error) {
-    try { db.exec('ROLLBACK'); } catch {}
+    try { await transaction.rollback(); } catch {}
     return res.status(500).json({ ok: false, error: error.message || String(error) });
   }
 });
 
-app.get('/api/quotations', (req, res) => {
+app.get('/api/quotations', async (req, res) => {
   const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
-  const rows = db.prepare(`
-    SELECT id, quote_number AS quoteNumber, document_type AS documentType,
-      client, status, subtotal, tax, total, currency, tax_rate AS taxRate,
-      deposit_rate AS depositRate, deposit_amount AS depositAmount,
-      deposit_schedule_json AS depositScheduleJson, deposit_payment_statuses_json AS depositPaymentStatusesJson,
-      note, exported_at AS exportedAt
-    FROM quotations ORDER BY id DESC LIMIT ?
-  `).all(limit);
-  const records = rows.map((record) => {
-    record.depositSchedule = JSON.parse(record.depositScheduleJson || '[]');
-    record.depositPaymentStatuses = JSON.parse(record.depositPaymentStatusesJson || '[]');
-    delete record.depositScheduleJson;
-    delete record.depositPaymentStatusesJson;
-    return record;
-  });
-  return res.json({ ok: true, records });
+  try {
+    const request = dbPool.request();
+    request.input('limit', sql.Int, limit);
+    const result = await request.query(`
+      SELECT TOP (@limit) id, quote_number AS quoteNumber, document_type AS documentType,
+        client, status, subtotal, tax, total, currency, tax_rate AS taxRate,
+        deposit_rate AS depositRate, deposit_amount AS depositAmount,
+        deposit_enabled AS depositEnabled, deposit_comment AS depositComment,
+        deposit_schedule_json AS depositScheduleJson, deposit_payment_statuses_json AS depositPaymentStatusesJson,
+        note, exported_at AS exportedAt
+      FROM dbo.quotations ORDER BY id DESC
+    `);
+    const records = result.recordset.map(normalizeQuotationRecord);
+    return res.json({ ok: true, records });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message || String(error) });
+  }
 });
 
-app.get('/api/quotations/next-number', (req, res) => {
-  const rows = db.prepare(`
-    SELECT quote_number AS quoteNumber
-    FROM quotations
-    WHERE document_type = 'quotation'
-  `).all();
-  const highestNumber = rows.reduce((highest, record) => {
+app.get('/api/quotations/next-number', async (req, res) => {
+  try {
+    const result = await dbPool.request().query(`SELECT quote_number AS quoteNumber FROM dbo.quotations WHERE document_type = 'quotation'`);
+    const highestNumber = result.recordset.reduce((highest, record) => {
     const match = String(record.quoteNumber || '').match(/(\d+)$/);
     return match ? Math.max(highest, Number(match[1])) : highest;
-  }, 1041);
-  return res.json({ ok: true, quoteNumber: `Q-${highestNumber + 1}` });
+    }, 1041);
+    return res.json({ ok: true, quoteNumber: `Q-${highestNumber + 1}` });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message || String(error) });
+  }
 });
 
-app.get('/api/quotations/:id', (req, res) => {
+app.get('/api/quotations/:id', async (req, res) => {
   const id = Number(req.params.id);
-  const record = db.prepare(`
-    SELECT id, quote_number AS quoteNumber, document_type AS documentType,
-      client, status, subtotal, tax, total, currency, tax_rate AS taxRate,
-      deposit_rate AS depositRate, deposit_amount AS depositAmount,
-      deposit_schedule_json AS depositScheduleJson,
-      deposit_payment_statuses_json AS depositPaymentStatusesJson,
-      confirmation_name AS confirmationName, confirmation_signature AS confirmationSignature,
-      confirmation_signature_image AS confirmationSignatureImage,
-      note, template_json AS templateJson, exported_at AS exportedAt
-    FROM quotations WHERE id = ?
-  `).get(id);
-  if (!record) return res.status(404).json({ ok: false, error: 'Record not found' });
-  record.template = JSON.parse(record.templateJson || '{}');
-  record.depositSchedule = JSON.parse(record.depositScheduleJson || '[]');
-  record.depositPaymentStatuses = JSON.parse(record.depositPaymentStatusesJson || '[]');
-  delete record.templateJson;
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ ok: false, error: 'Invalid record id' });
+  try {
+    const request = dbPool.request();
+    request.input('id', sql.Int, id);
+    const result = await request.query(`
+      SELECT id, quote_number AS quoteNumber, document_type AS documentType,
+        client, status, subtotal, tax, total, currency, tax_rate AS taxRate,
+        deposit_rate AS depositRate, deposit_amount AS depositAmount,
+        deposit_enabled AS depositEnabled, deposit_comment AS depositComment,
+        deposit_schedule_json AS depositScheduleJson, deposit_payment_statuses_json AS depositPaymentStatusesJson,
+        confirmation_name AS confirmationName, confirmation_signature AS confirmationSignature,
+        confirmation_signature_image AS confirmationSignatureImage,
+        note, template_json AS templateJson, exported_at AS exportedAt
+      FROM dbo.quotations WHERE id = @id;
+      SELECT id, item_name AS name, quantity AS qty, unit_price AS price, amount
+      FROM dbo.quotation_items WHERE quotation_id = @id ORDER BY id;
+    `);
+    if (!result.recordsets[0][0]) return res.status(404).json({ ok: false, error: 'Record not found' });
+    const record = normalizeQuotationRecord(result.recordsets[0][0]);
+    record.template = parseJson(record.templateJson, {});
+    delete record.templateJson;
+    record.items = result.recordsets[1];
+    return res.json({ ok: true, record });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message || String(error) });
+  }
+});
+
+app.patch('/api/quotations/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ ok: false, error: 'Invalid record id' });
+  try {
+    const readRequest = dbPool.request();
+    readRequest.input('id', sql.Int, id);
+    const existingResult = await readRequest.query(`SELECT status, deposit_payment_statuses_json AS depositPaymentStatusesJson FROM dbo.quotations WHERE id = @id`);
+    const existing = existingResult.recordset[0];
+    if (!existing) return res.status(404).json({ ok: false, error: 'Record not found' });
+    const nextStatus = req.body.status == null ? existing.status : String(req.body.status);
+    const nextPaymentStatuses = Array.isArray(req.body.depositPaymentStatuses)
+      ? req.body.depositPaymentStatuses.slice(0, 3).map(Boolean)
+      : parseJson(existing.depositPaymentStatusesJson, []);
+    const updateRequest = dbPool.request();
+    updateRequest.input('id', sql.Int, id);
+    updateRequest.input('status', sql.NVarChar(100), nextStatus);
+    updateRequest.input('paymentStatuses', sql.NVarChar(sql.MAX), JSON.stringify(nextPaymentStatuses));
+    await updateRequest.query(`UPDATE dbo.quotations SET status = @status, deposit_payment_statuses_json = @paymentStatuses WHERE id = @id`);
+    return res.json({ ok: true, id, status: nextStatus, depositPaymentStatuses: nextPaymentStatuses });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message || String(error) });
+  }
+});
+
+function parseJson(value, fallback) {
+  try { return JSON.parse(value || JSON.stringify(fallback)); } catch { return fallback; }
+}
+
+function normalizeQuotationRecord(record) {
+  record.depositEnabled = Boolean(record.depositEnabled);
+  record.depositSchedule = parseJson(record.depositScheduleJson, []);
+  record.depositPaymentStatuses = parseJson(record.depositPaymentStatusesJson, []);
   delete record.depositScheduleJson;
   delete record.depositPaymentStatusesJson;
-  record.items = db.prepare(`
-    SELECT id, item_name AS name, quantity AS qty, unit_price AS price, amount
-    FROM quotation_items WHERE quotation_id = ? ORDER BY id
-  `).all(id);
-  return res.json({ ok: true, record });
-});
-
-app.patch('/api/quotations/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const existing = db.prepare('SELECT id, status, deposit_payment_statuses_json AS depositPaymentStatusesJson FROM quotations WHERE id = ?').get(id);
-  if (!existing) return res.status(404).json({ ok: false, error: 'Record not found' });
-
-  const nextStatus = req.body.status == null ? existing.status : String(req.body.status);
-  const nextPaymentStatuses = Array.isArray(req.body.depositPaymentStatuses)
-    ? req.body.depositPaymentStatuses.slice(0, 3).map(Boolean)
-    : JSON.parse(existing.depositPaymentStatusesJson || '[]');
-
-  db.prepare(`
-    UPDATE quotations
-    SET status = ?, deposit_payment_statuses_json = ?
-    WHERE id = ?
-  `).run(nextStatus, JSON.stringify(nextPaymentStatuses), id);
-
-  return res.json({ ok: true, id, status: nextStatus, depositPaymentStatuses: nextPaymentStatuses });
-});
+  return record;
+}
 
 async function handleDeviceRequest(req, res) {
   const { action, params } = req.body || {};
@@ -302,7 +335,17 @@ async function handleDeviceRequest(req, res) {
 app.post('/api/device', handleDeviceRequest);
 app.post('/api/openclaw', handleDeviceRequest);
 
-app.listen(port, () => {
-  console.log(`Device bridge listening on http://localhost:${port}`);
-  console.log(`Quotation database: ${databasePath}`);
-});
+initializeDatabase()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`Device bridge listening on http://localhost:${port}`);
+      const sqlLocation = sqlConfig.options.instanceName
+        ? `${sqlConfig.server}\\${sqlConfig.options.instanceName}`
+        : `${sqlConfig.server}:${sqlConfig.port}`;
+      console.log(`SQL Server database: ${sqlLocation}/${sqlConfig.database}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Could not connect to SQL Server:', error.message || error);
+    process.exitCode = 1;
+  });

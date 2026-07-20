@@ -198,6 +198,7 @@ table.items tbody td:first-child {
   border-left: 3px solid var(--accent-gold); background: rgba(255,255,255,0.28);
 }
 .deposit-title { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+.deposit-mode { display: flex; gap: 6px; margin-top: 9px; }
 .deposit-options { display: flex; flex-wrap: wrap; gap: 6px; margin: 9px 0 11px; }
 .deposit-option {
   border: 1px solid #a9a18e; background: transparent; color: var(--ink); border-radius: 3px;
@@ -216,6 +217,15 @@ table.items tbody td:first-child {
 .deposit-total { display: flex; justify-content: space-between; gap: 16px; border-top: 1px solid #c9c0a8; margin-top: 10px; padding-top: 8px; font-size: 10.5px; }
 .deposit-total.invalid { color: var(--accent-red); font-weight: 700; }
 .deposit-help { margin-top: 7px; font: 9.5px 'Inter', sans-serif; color: var(--ink-soft); }
+.deposit-comment { margin-top: 12px; }
+.deposit-comment label { display: block; margin-bottom: 5px; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.deposit-comment textarea {
+  width: 100%; min-height: 54px; box-sizing: border-box; resize: vertical; border: 1px solid #a9a18e;
+  border-radius: 3px; background: rgba(255,255,255,.25); color: var(--ink); padding: 7px 8px;
+  font: 11px 'Inter', sans-serif; line-height: 1.4;
+}
+.deposit-comment-print { display: none; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px 'Inter', sans-serif; line-height: 1.4; }
+.cash-payment { margin-top: 10px; padding: 9px 0; border-top: 1px solid #c9c0a8; border-bottom: 1px solid #c9c0a8; display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
 
 .quote-summary {
   margin-top: 26px; border: 1px solid #c9c0a8; background: rgba(255,255,255,0.32);
@@ -341,10 +351,12 @@ table.items tbody td:first-child {
   }
   .paper-toolbar { display: none; }
   .quote-summary { display: none; }
-  .deposit-options { display: none; }
+  .deposit-options, .deposit-mode { display: none; }
   .deposit-note { break-inside: avoid; }
   .deposit-installment { grid-template-columns: 1fr auto; }
   .deposit-installment input { display: none; }
+  .deposit-comment textarea { display: none; }
+  .deposit-comment-print { display: block; }
   .quote-number-input, .confirmation input { border-bottom-color: transparent; }
   .signature-upload-controls { display: none; }
   .template-modal { display: none !important; }
@@ -508,6 +520,8 @@ export default function LedgerQuotationDemo() {
   const [client, setClient] = useState("");
   const [items, setItems] = useState([]);
   const [note, setNote] = useState("");
+  const [depositEnabled, setDepositEnabled] = useState(true);
+  const [depositComment, setDepositComment] = useState("");
   const [depositSchedule, setDepositSchedule] = useState(DEPOSIT_SCHEDULES[2]);
   const [depositPaymentStatuses, setDepositPaymentStatuses] = useState([false, false]);
   const [status, setStatus] = useState("Draft");
@@ -644,6 +658,8 @@ export default function LedgerQuotationDemo() {
     setClient(record.client || "");
     setItems((record.items || []).map((item) => ({ name: item.name, qty: Number(item.qty), price: Number(item.price) })));
     setNote(record.note || "");
+    setDepositEnabled(record.depositEnabled !== false);
+    setDepositComment(record.depositComment || "");
     const savedSchedule = Array.isArray(record.depositSchedule) && [2, 3].includes(record.depositSchedule.length)
       ? record.depositSchedule.map((rate) => Math.min(100, Math.max(0, Number(rate) || 0)))
       : [record.depositRate == null ? 30 : Math.min(100, Math.max(0, Number(record.depositRate) || 0)),
@@ -725,8 +741,19 @@ export default function LedgerQuotationDemo() {
       setNote(n);
       addMsg(`Added note to the quote: "${n}"`, "bot");
     } else if (lower.startsWith("deposit ")) {
-      const rate = Number(text.slice(8).replace("%", "").trim());
-      if (Number.isFinite(rate) && rate >= 0 && rate <= 100) {
+      const depositValue = text.slice(8).replace("%", "").trim().toLowerCase();
+      const rate = Number(depositValue);
+      if (["off", "cash", "none"].includes(depositValue)) {
+        setDepositEnabled(false);
+        setDepositPaymentStatuses([false]);
+        addMsg("Deposit turned off. Payment is set to one-time cash in full.", "bot");
+      } else if (depositValue === "on") {
+        setDepositEnabled(true);
+        setDepositSchedule(DEPOSIT_SCHEDULES[2]);
+        setDepositPaymentStatuses([false, false]);
+        addMsg("Deposit turned on with the default 30% and 70% schedule.", "bot");
+      } else if (Number.isFinite(rate) && rate >= 0 && rate <= 100) {
+        setDepositEnabled(true);
         setDepositSchedule([rate, 100 - rate]);
         setDepositPaymentStatuses([false, false]);
         addMsg(`Two-part deposit schedule set to ${rate}% and ${100 - rate}%.`, "bot");
@@ -740,6 +767,8 @@ export default function LedgerQuotationDemo() {
       setClient("");
       setItems([]);
       setNote("");
+      setDepositEnabled(true);
+      setDepositComment("");
       setDepositSchedule(DEPOSIT_SCHEDULES[2]);
       setDepositPaymentStatuses([false, false]);
       setConfirmationName("");
@@ -769,6 +798,7 @@ export default function LedgerQuotationDemo() {
   }
 
   function chooseDepositCollections(collections) {
+    setDepositEnabled(true);
     setDepositSchedule([...DEPOSIT_SCHEDULES[collections]]);
     setDepositPaymentStatuses(DEPOSIT_SCHEDULES[collections].map(() => false));
   }
@@ -787,7 +817,7 @@ export default function LedgerQuotationDemo() {
       addMsg("Add a client and at least one line item before exporting the PDF.", "bot");
       return;
     }
-    if (!depositScheduleIsValid) {
+    if (depositEnabled && !depositScheduleIsValid) {
       addMsg(`The deposit schedule must total 100% before exporting the PDF.`, "bot");
       return;
     }
@@ -806,8 +836,10 @@ export default function LedgerQuotationDemo() {
       taxRate,
       depositRate,
       depositAmount,
-      depositSchedule,
-      depositPaymentStatuses,
+      depositEnabled,
+      depositComment,
+      depositSchedule: effectivePaymentSchedule,
+      depositPaymentStatuses: effectivePaymentStatuses,
       confirmationName,
       confirmationSignature,
       confirmationSignatureImage,
@@ -832,7 +864,7 @@ export default function LedgerQuotationDemo() {
       addMsg("Add a client and at least one line item before creating a receipt.", "bot");
       return;
     }
-    if (!depositScheduleIsValid) {
+    if (depositEnabled && !depositScheduleIsValid) {
       addMsg(`The deposit schedule must total 100% before creating a receipt.`, "bot");
       return;
     }
@@ -849,8 +881,10 @@ export default function LedgerQuotationDemo() {
       currency: template.currency,
       depositRate,
       depositAmount,
-      depositSchedule: [...depositSchedule],
-      depositPaymentStatuses: [...depositPaymentStatuses],
+      depositEnabled,
+      depositComment,
+      depositSchedule: [...effectivePaymentSchedule],
+      depositPaymentStatuses: [...effectivePaymentStatuses],
       confirmationName,
       confirmationSignature,
       confirmationSignatureImage,
@@ -870,6 +904,8 @@ export default function LedgerQuotationDemo() {
       taxRate: nextReceipt.taxRate,
       depositRate: nextReceipt.depositRate,
       depositAmount: nextReceipt.depositAmount,
+      depositEnabled: nextReceipt.depositEnabled,
+      depositComment: nextReceipt.depositComment,
       depositSchedule: nextReceipt.depositSchedule,
       depositPaymentStatuses: nextReceipt.depositPaymentStatuses,
       confirmationName: nextReceipt.confirmationName,
@@ -898,7 +934,11 @@ export default function LedgerQuotationDemo() {
   const taxRate = Math.max(0, Number(template.taxRate) || 0);
   const tax = subtotal * (taxRate / 100);
   const total = subtotal + tax;
-  const depositRate = depositSchedule[0] || 0;
+  const effectivePaymentSchedule = depositEnabled ? depositSchedule : [100];
+  const effectivePaymentStatuses = depositEnabled
+    ? depositSchedule.map((_, index) => Boolean(depositPaymentStatuses[index]))
+    : [Boolean(depositPaymentStatuses[0])];
+  const depositRate = depositEnabled ? depositSchedule[0] || 0 : 0;
   const depositAmount = total * (depositRate / 100);
   const depositScheduleTotal = depositSchedule.reduce((sum, rate) => sum + rate, 0);
   const depositScheduleIsValid = Math.abs(depositScheduleTotal - 100) < 0.001;
@@ -1069,43 +1109,45 @@ export default function LedgerQuotationDemo() {
           </div>
 
           <div className="deposit-note ledger-mono">
-            <div className="deposit-title">Deposit collection schedule</div>
-            <div className="deposit-options" aria-label="Choose number of deposit collections">
-              {[2, 3].map((collections) => (
-                <button
-                  type="button"
-                  key={collections}
-                  className={`deposit-option ${depositSchedule.length === collections ? "active" : ""}`}
-                  aria-pressed={depositSchedule.length === collections}
-                  onClick={() => chooseDepositCollections(collections)}
-                >
-                  {collections} collections
-                </button>
-              ))}
+            <div className="deposit-title">Payment terms</div>
+            <div className="deposit-mode" aria-label="Turn deposit on or off">
+              <button type="button" className={`deposit-option ${depositEnabled ? "active" : ""}`} aria-pressed={depositEnabled} onClick={() => { setDepositEnabled(true); setDepositSchedule(DEPOSIT_SCHEDULES[2]); setDepositPaymentStatuses([false, false]); }}>
+                Deposit on
+              </button>
+              <button type="button" className={`deposit-option ${!depositEnabled ? "active" : ""}`} aria-pressed={!depositEnabled} onClick={() => { setDepositEnabled(false); setDepositPaymentStatuses([false]); }}>
+                Deposit off / cash once
+              </button>
             </div>
-            <div className="deposit-schedule">
-              {depositSchedule.map((rate, index) => (
-                <div className="deposit-installment" key={index}>
-                  <label htmlFor={`deposit-installment-${index}`}>{index + 1}{index === 0 ? "st" : index === 1 ? "nd" : "rd"} collection</label>
-                  <input
-                    id={`deposit-installment-${index}`}
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={rate}
-                    aria-label={`Collection ${index + 1} percentage`}
-                    onChange={(e) => updateDepositInstallment(index, e.target.value)}
-                  />
-                  <strong>{rate}% · {money(total * rate / 100, template.currency)}</strong>
-                </div>
-              ))}
+            {depositEnabled ? <>
+              <div className="deposit-options" aria-label="Choose number of deposit collections">
+                {[2, 3].map((collections) => (
+                  <button type="button" key={collections} className={`deposit-option ${depositSchedule.length === collections ? "active" : ""}`} aria-pressed={depositSchedule.length === collections} onClick={() => chooseDepositCollections(collections)}>
+                    {collections} collections
+                  </button>
+                ))}
+              </div>
+              <div className="deposit-schedule">
+                {depositSchedule.map((rate, index) => (
+                  <div className="deposit-installment" key={index}>
+                    <label htmlFor={`deposit-installment-${index}`}>{index + 1}{index === 0 ? "st" : index === 1 ? "nd" : "rd"} collection</label>
+                    <input id={`deposit-installment-${index}`} type="number" min="0" max="100" step="1" value={rate} aria-label={`Collection ${index + 1} percentage`} onChange={(e) => updateDepositInstallment(index, e.target.value)} />
+                    <strong>{rate}% · {money(total * rate / 100, template.currency)}</strong>
+                  </div>
+                ))}
+              </div>
+              <div className={`deposit-total ${depositScheduleIsValid ? "" : "invalid"}`}>
+                <span>Schedule total</span>
+                <span>{depositScheduleTotal}% {depositScheduleIsValid ? "✓" : "— must equal 100%"}</span>
+              </div>
+              <div className="deposit-help">Each collection is calculated from the total, including tax.</div>
+            </> : (
+              <div className="cash-payment"><span>Cash payment · 1 time</span><strong>{money(total, template.currency)}</strong></div>
+            )}
+            <div className="deposit-comment">
+              <label htmlFor="deposit-comment">Payment comment</label>
+              <textarea id="deposit-comment" value={depositComment} placeholder="Add a comment about the deposit or payment…" onChange={(e) => setDepositComment(e.target.value)} />
+              <div className="deposit-comment-print">{depositComment || "—"}</div>
             </div>
-            <div className={`deposit-total ${depositScheduleIsValid ? "" : "invalid"}`}>
-              <span>Schedule total</span>
-              <span>{depositScheduleTotal}% {depositScheduleIsValid ? "✓" : "— must equal 100%"}</span>
-            </div>
-            <div className="deposit-help">Each collection is calculated from the total, including tax.</div>
           </div>
 
           <div className="note-line">{note ? `"${note}"` : ""}</div>
@@ -1154,7 +1196,10 @@ export default function LedgerQuotationDemo() {
           ) : (
             <div className="summary-records">
               {historyRecords.map((record) => {
-                const schedule = record.depositSchedule?.length ? record.depositSchedule : [record.depositRate || 30, 100 - (record.depositRate || 30)];
+                const depositIsEnabled = record.depositEnabled !== false;
+                const schedule = depositIsEnabled
+                  ? (record.depositSchedule?.length ? record.depositSchedule : [record.depositRate || 30, 100 - (record.depositRate || 30)])
+                  : [100];
                 return (
                   <div className="summary-record ledger-mono" key={record.id}>
                     <div className="summary-record-main">
@@ -1174,7 +1219,7 @@ export default function LedgerQuotationDemo() {
                         const paid = Boolean(record.depositPaymentStatuses?.[index]);
                         return (
                           <button className={`payment-toggle ${paid ? "paid" : ""}`} key={index} onClick={() => toggleDepositPaid(record, index)}>
-                            {index + 1}{index === 0 ? "st" : index === 1 ? "nd" : "rd"} deposit · {rate}% · {money(record.total * rate / 100, record.currency)} · {paid ? "Paid ✓" : "Unpaid"}
+                            {depositIsEnabled ? `${index + 1}${index === 0 ? "st" : index === 1 ? "nd" : "rd"} deposit · ${rate}%` : "Cash · 1 time"} · {money(record.total * rate / 100, record.currency)} · {paid ? "Paid ✓" : "Unpaid"}
                           </button>
                         );
                       })}

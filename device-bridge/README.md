@@ -30,12 +30,29 @@ Send a test command:
 curl -X POST http://localhost:3001/api/device -H "Content-Type: application/json" -d '{"action":"status","params":{}}'
 ```
 
-Quotation database
-------------------
+Quotation database (Microsoft SQL Server)
+-----------------------------------------
 
-The bridge automatically creates a SQLite database at `device-bridge/data/quotations.db`.
-Every completed quotation PDF export and every created receipt is saved with its client,
-line items, totals, status, note, currency, tax rate, template settings, and export time.
+Create an empty SQL Server database named `QuotationApp`, then add the SQL connection values
+from `.env.example` to your `.env`. The configured SQL login needs permission to connect to the
+database and create/read/write tables. On startup, the bridge automatically creates the
+`dbo.quotations` and `dbo.quotation_items` tables when they do not exist.
+
+Example SQL Server authentication settings:
+
+```env
+SQL_SERVER=localhost
+SQL_PORT=1433
+SQL_DATABASE=QuotationApp
+SQL_USER=quotation_app
+SQL_PASSWORD=your-secure-password
+SQL_ENCRYPT=false
+SQL_TRUST_SERVER_CERTIFICATE=true
+```
+
+For SQL Server Express or another named instance, use `SQL_INSTANCE=SQLEXPRESS` instead of
+`SQL_PORT`. Every completed quotation PDF export and receipt is saved with its client, line
+items, totals, payment terms, status, note, currency, template settings, and export time.
 
 Read the most recent records:
 
