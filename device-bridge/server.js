@@ -1,8 +1,9 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-const sql = require('mssql');
 require('dotenv').config();
+const useWindowsAuthentication = String(process.env.SQL_AUTHENTICATION || 'sql').toLowerCase() === 'windows';
+const sql = useWindowsAuthentication ? require('mssql/msnodesqlv8') : require('mssql');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -10,23 +11,32 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
+const sqlServer = process.env.SQL_SERVER || 'localhost';
+const sqlInstance = process.env.SQL_INSTANCE || '';
 const sqlConfig = {
-  server: process.env.SQL_SERVER || 'localhost',
+  server: useWindowsAuthentication && sqlInstance ? `${sqlServer}\\${sqlInstance}` : sqlServer,
   port: Number(process.env.SQL_PORT) || 1433,
   database: process.env.SQL_DATABASE || 'QuotationApp',
-  user: process.env.SQL_USER,
-  password: process.env.SQL_PASSWORD,
   options: {
     encrypt: String(process.env.SQL_ENCRYPT || 'false').toLowerCase() === 'true',
     trustServerCertificate: String(process.env.SQL_TRUST_SERVER_CERTIFICATE || 'true').toLowerCase() === 'true',
     enableArithAbort: true,
+    trustedConnection: useWindowsAuthentication,
   },
   pool: { max: 10, min: 0, idleTimeoutMillis: 30000 },
 };
 
-if (process.env.SQL_INSTANCE) {
+if (useWindowsAuthentication) {
   delete sqlConfig.port;
-  sqlConfig.options.instanceName = process.env.SQL_INSTANCE;
+  sqlConfig.driver = 'msnodesqlv8';
+} else {
+  sqlConfig.user = process.env.SQL_USER;
+  sqlConfig.password = process.env.SQL_PASSWORD;
+}
+
+if (!useWindowsAuthentication && sqlInstance) {
+  delete sqlConfig.port;
+  sqlConfig.options.instanceName = sqlInstance;
 }
 
 let dbPool;
@@ -339,10 +349,10 @@ initializeDatabase()
   .then(() => {
     app.listen(port, () => {
       console.log(`Device bridge listening on http://localhost:${port}`);
-      const sqlLocation = sqlConfig.options.instanceName
-        ? `${sqlConfig.server}\\${sqlConfig.options.instanceName}`
-        : `${sqlConfig.server}:${sqlConfig.port}`;
-      console.log(`SQL Server database: ${sqlLocation}/${sqlConfig.database}`);
+      const sqlLocation = useWindowsAuthentication
+        ? sqlConfig.server
+        : (sqlConfig.options.instanceName ? `${sqlConfig.server}\\${sqlConfig.options.instanceName}` : `${sqlConfig.server}:${sqlConfig.port}`);
+      console.log(`SQL Server database: ${sqlLocation}/${sqlConfig.database} (${useWindowsAuthentication ? 'Windows' : 'SQL'} authentication)`);
     });
   })
   .catch((error) => {

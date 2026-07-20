@@ -38,21 +38,22 @@ from `.env.example` to your `.env`. The configured SQL login needs permission to
 database and create/read/write tables. On startup, the bridge automatically creates the
 `dbo.quotations` and `dbo.quotation_items` tables when they do not exist.
 
-Example SQL Server authentication settings:
+Your `LOCAL\\SQLEXPRESS` / `.\\SQLEXPRESS` connection using Windows Authentication should use:
 
 ```env
 SQL_SERVER=localhost
-SQL_PORT=1433
+SQL_INSTANCE=SQLEXPRESS
 SQL_DATABASE=QuotationApp
-SQL_USER=quotation_app
-SQL_PASSWORD=your-secure-password
+SQL_AUTHENTICATION=windows
 SQL_ENCRYPT=false
 SQL_TRUST_SERVER_CERTIFICATE=true
 ```
 
-For SQL Server Express or another named instance, use `SQL_INSTANCE=SQLEXPRESS` instead of
-`SQL_PORT`. Every completed quotation PDF export and receipt is saved with its client, line
-items, totals, payment terms, status, note, currency, template settings, and export time.
+The Node process connects as the Windows account that runs `npm run server`; that account needs
+access to the `QuotationApp` database. For SQL authentication, set `SQL_AUTHENTICATION=sql`,
+`SQL_USER`, and `SQL_PASSWORD`. Every completed quotation PDF export and receipt is saved with
+its client, line items, totals, payment terms, status, note, currency, template settings, and
+export time.
 
 Read the most recent records:
 
