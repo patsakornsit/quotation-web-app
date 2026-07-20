@@ -395,6 +395,7 @@ const initialMessage = {
 };
 
 const SUGGESTIONS = [
+  "create quotation name: Patsakorn Sit subject: Website design qty: 1 price: 500",
   "client Acme Renovations",
   "add Site survey, 1, 450",
   "add Kitchen cabinetry, 12, 310",
@@ -410,6 +411,7 @@ const DEPOSIT_SCHEDULES = {
 
 const DEVICE_API_ENDPOINT = "http://localhost:3001/api/device";
 const QUOTATION_API_ENDPOINT = "http://localhost:3001/api/quotations";
+const QUOTATION_ASSISTANT_ENDPOINT = "http://localhost:3001/api/quotation-assistant";
 
 function money(n, currency = "$") {
   return currency + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -419,6 +421,23 @@ function savedDate(value) {
   if (!value) return "";
   const parsed = new Date(value.includes("T") ? value : `${value.replace(" ", "T")}Z`);
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString();
+}
+
+function parseNaturalQuotationRequest(text) {
+  if (!/\b(?:create|make|new)\b[\s\S]*\b(?:quotation|quote)\b/i.test(text)) return null;
+
+  const clientMatch = text.match(/\b(?:name|client|customer)\s*(?:is|:|=)?\s*(.+?)(?=\s+\b(?:subject|item|service|description)\b|$)/i);
+  const subjectMatch = text.match(/\b(?:subject|item|service|description)\s*(?:is|:|=)?\s*(.+?)(?=\s+(?:(?:qty|quantity)\s*(?:is|:|=)?\s*\d|\d+(?:\.\d+)?\s+(?:qty|quantity)\b|(?:price|cost|amount)\b)|$)/i);
+  const quantityAfterLabel = text.match(/\b(?:qty|quantity)\s*(?:is|:|=)?\s*(\d+(?:\.\d+)?)/i);
+  const quantityBeforeLabel = text.match(/\b(\d+(?:\.\d+)?)\s+(?:qty|quantity)\b/i);
+  const priceMatch = text.match(/\b(?:price|cost|amount)\s*(?:is|:|=)?\s*[^\d]*([\d,]+(?:\.\d+)?)/i);
+
+  const client = clientMatch?.[1]?.trim() || "Customer";
+  const subject = subjectMatch?.[1]?.trim() || "Professional service";
+  const qty = Math.max(0.01, Number(quantityAfterLabel?.[1] || quantityBeforeLabel?.[1]) || 1);
+  const price = Math.max(0, Number((priceMatch?.[1] || "0").replace(/,/g, "")) || 0);
+
+  return { client, subject, qty, price };
 }
 
 // callDevice sends a request to the local/backend device bridge
@@ -507,6 +526,21 @@ async function updateSavedQuotation(id, changes) {
       const contentType = response.headers.get("content-type") || "unknown content type";
       throw new Error(`API returned HTTP ${response.status} (${contentType}). Restart the device-bridge server and try again.`);
     }
+    if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    return { ok: true, ...result };
+  } catch (error) {
+    return { ok: false, error: error.message || String(error) };
+  }
+}
+
+async function interpretQuotationMessage(message, quotation) {
+  try {
+    const response = await fetch(QUOTATION_ASSISTANT_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, quotation }),
+    });
+    const result = await response.json();
     if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
     return { ok: true, ...result };
   } catch (error) {
@@ -678,14 +712,93 @@ export default function LedgerQuotationDemo() {
     addMsg(`Loaded quotation ${record.quoteNumber} for ${record.client} from database record #${record.id}.`, "bot");
   }
 
-  async function runDeviceCommand(action, param) {
-    const res = await callDevice(action, { value: param });
-    if (res.ok) {
-      const detail = typeof res.json.message === "string" ? res.json.message : "Command completed";
-      return { ok: true, message: detail };
+  async function applyQuotationActions(actions) {
+    for (const action of Array.isArray(actions) ? actions : []) {
+      switch (action.type) {
+        case "new_quotation":
+          setClient("");
+          setItems([]);
+          setNote("");
+          setDepositEnabled(true);
+          setDepositComment("");
+          setDepositSchedule(DEPOSIT_SCHEDULES[2]);
+          setDepositPaymentStatuses([false, false]);
+          setConfirmationName("");
+          setConfirmationSignature("");
+          setConfirmationSignatureImage("");
+          setStatus("Draft");
+          setReceipt(null);
+          setLastSaved(null);
+          setActivePage("quotation");
+          await assignNextQuotationNumber();
+          break;
+        case "set_client":
+          setClient(String(action.value || "").trim());
+          break;
+        case "add_item":
+          setItems((current) => [...current, {
+            name: String(action.name || "Professional service").trim(),
+            qty: Math.max(0.01, Number(action.qty) || 1),
+            price: Math.max(0, Number(action.price) || 0),
+          }]);
+          break;
+        case "update_item":
+          setItems((current) => {
+            const requestedIndex = Number(action.index);
+            const index = Number.isInteger(requestedIndex) && requestedIndex > 0
+              ? requestedIndex - 1
+              : current.findIndex((item) => item.name.toLowerCase().includes(String(action.name || "").toLowerCase()));
+            if (index < 0 || !current[index]) return current;
+            return current.map((item, itemIndex) => itemIndex === index ? {
+              ...item,
+              name: action.newName == null ? item.name : String(action.newName).trim(),
+              qty: action.qty == null ? item.qty : Math.max(0.01, Number(action.qty) || 1),
+              price: action.price == null ? item.price : Math.max(0, Number(action.price) || 0),
+            } : item);
+          });
+          break;
+        case "remove_item":
+          setItems((current) => {
+            const requestedIndex = Number(action.index);
+            if (Number.isInteger(requestedIndex) && requestedIndex > 0) return current.filter((_, index) => index !== requestedIndex - 1);
+            const name = String(action.name || "").toLowerCase();
+            return current.filter((item) => !item.name.toLowerCase().includes(name));
+          });
+          break;
+        case "set_note":
+          setNote(String(action.value || "").trim());
+          break;
+        case "set_deposit": {
+          const enabled = action.enabled !== false;
+          setDepositEnabled(enabled);
+          setDepositComment(String(action.comment || "").trim());
+          if (!enabled) {
+            setDepositPaymentStatuses([false]);
+            break;
+          }
+          const schedule = Array.isArray(action.schedule) && [2, 3].includes(action.schedule.length)
+            ? action.schedule.map((rate) => Math.min(100, Math.max(0, Number(rate) || 0)))
+            : DEPOSIT_SCHEDULES[2];
+          setDepositSchedule(schedule);
+          setDepositPaymentStatuses(schedule.map(() => false));
+          break;
+        }
+        case "set_status":
+          setStatus(String(action.value || "Draft").trim());
+          break;
+        case "set_tax_rate":
+          updateTemplate("taxRate", Math.max(0, Number(action.value) || 0));
+          break;
+        case "set_currency":
+          updateTemplate("currency", String(action.value || "$"));
+          break;
+        case "set_confirmation_name":
+          setConfirmationName(String(action.value || "").trim());
+          break;
+        default:
+          break;
+      }
     }
-    const detail = res.error || (res.mock && res.mock.message) || "Unknown error";
-    return { ok: false, message: detail };
   }
 
   async function handleCommand(raw) {
@@ -693,8 +806,42 @@ export default function LedgerQuotationDemo() {
     if (!text) return;
     addMsg(text, "user");
     const lower = text.toLowerCase();
+    const naturalQuotation = parseNaturalQuotationRequest(text);
+    const collectionMatch = text.match(/\b([23])\s*(?:payment\s+)?collections?\b/i)
+      || text.match(/\bcollections?\s*(?:is|to|:|=)?\s*([23])\b/i);
 
-    if (lower.startsWith("client ")) {
+    if (naturalQuotation) {
+      setClient(naturalQuotation.client);
+      setItems([{ name: naturalQuotation.subject, qty: naturalQuotation.qty, price: naturalQuotation.price }]);
+      setNote("");
+      setDepositEnabled(true);
+      setDepositComment("");
+      setDepositSchedule(DEPOSIT_SCHEDULES[2]);
+      setDepositPaymentStatuses([false, false]);
+      setConfirmationName("");
+      setConfirmationSignature("");
+      setConfirmationSignatureImage("");
+      setStatus("Draft");
+      setReceipt(null);
+      setLastSaved(null);
+      setActivePage("quotation");
+      await assignNextQuotationNumber();
+      addMsg(
+        `Created a new quotation for "${naturalQuotation.client}" with "${naturalQuotation.subject}" — ${naturalQuotation.qty} × ${money(naturalQuotation.price, template.currency)}. Unspecified settings use the defaults.`,
+        "bot"
+      );
+    } else if (collectionMatch) {
+      const collections = Number(collectionMatch[1]);
+      const schedule = [...DEPOSIT_SCHEDULES[collections]];
+      setDepositEnabled(true);
+      setDepositSchedule(schedule);
+      setDepositPaymentStatuses(schedule.map(() => false));
+      setItems((current) => current.filter((item) => !/^collections?$/i.test(item.name.trim())));
+      addMsg(
+        `Payment terms changed to ${collections} deposit collections: ${schedule.join("% / ")}%. This changes the deposit schedule, not the quotation items.`,
+        "bot"
+      );
+    } else if (lower.startsWith("client ")) {
       const name = text.slice(7).trim();
       setClient(name);
       addMsg(`Set client to "${name}".`, "bot");
@@ -725,17 +872,6 @@ export default function LedgerQuotationDemo() {
         addMsg(`No line item at position ${n}. You can also click "remove" next to any row.`, "bot");
         return prev;
       });
-    } else if (lower.startsWith("deepseek") || lower === "deepseek" || lower.startsWith("openclaw") || lower === "openclaw") {
-      const parts = lower.split(/\s+/).filter(Boolean);
-      const action = parts[1] || "status";
-      const param = parts[2];
-      addMsg(`Sending device command: ${action}${param ? " " + param : ""}`, "bot");
-      const res = await runDeviceCommand(action, param);
-      if (res.ok) {
-        addMsg(`Device: ${res.message}`, "bot");
-      } else {
-        addMsg(`Device (mock/error): ${res.message}`, "bot");
-      }
     } else if (lower.startsWith("note ")) {
       const n = text.slice(5).trim();
       setNote(n);
@@ -784,10 +920,24 @@ export default function LedgerQuotationDemo() {
       setStatus(s);
       addMsg(`Status set to "${s}".`, "bot");
     } else {
-      addMsg(
-        `I didn't catch that as a command. Try: "client Acme Co" · "add Item name, qty, price" · "deposit 30" · "note text" · "pdf"`,
-        "bot"
-      );
+      const assistantResult = await interpretQuotationMessage(text, {
+        quoteNumber: quoteNo,
+        client,
+        items,
+        note,
+        status,
+        taxRate,
+        currency: template.currency,
+        depositEnabled,
+        depositComment,
+        depositSchedule,
+      });
+      if (!assistantResult.ok) {
+        addMsg(`I could not interpret that quotation request: ${assistantResult.error}`, "bot");
+      } else {
+        await applyQuotationActions(assistantResult.actions);
+        addMsg(assistantResult.reply || "Quotation updated.", "bot");
+      }
     }
   }
 

@@ -6,7 +6,7 @@ Small Express bridge that forwards `/api/device` requests from the demo frontend
 Setup
 -----
 
-1. Copy `.env.example` to `.env` and set `OPENCLAW_API_URL` or `DEEPSEEK_API_URL` (and `OPENCLAW_API_KEY` or `DEEPSEEK_API_KEY` if required).
+1. Copy `.env.example` to `.env` and set `DEEPSEEK_CHAT_URL` and `DEEPSEEK_API_KEY` for the quotation-only natural-language assistant.
 
 2. Install and run:
 
@@ -69,8 +69,8 @@ curl http://localhost:3001/api/quotations/1
 
 Notes
 -----
-- The bridge simply forwards `{ command, params }` to the configured `OPENCLAW_API_URL` and returns the remote response.
-- Provide the actual OpenClaw API docs or the exact request format if the cloud API differs from this shape and I will adapt the bridge.
+- Free-form chat is sent through the backend to DeepSeek and converted into validated quotation actions. Unrelated requests are refused.
+- The API key stays in the backend `.env` and is never sent to the browser.
 
 Serial (USB) mode
 ------------------
