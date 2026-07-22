@@ -2,7 +2,11 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 require('dotenv').config();
-const useWindowsAuthentication = String(process.env.SQL_AUTHENTICATION || 'sql').toLowerCase() === 'windows';
+const configuredSqlAuthentication = String(process.env.SQL_AUTHENTICATION || 'sql').toLowerCase();
+const useWindowsAuthentication = configuredSqlAuthentication === 'windows' && process.platform === 'win32';
+if (configuredSqlAuthentication === 'windows' && process.platform !== 'win32') {
+  console.warn('SQL_AUTHENTICATION=windows is unavailable on this platform; falling back to SQL authentication.');
+}
 const sql = useWindowsAuthentication ? require('mssql/msnodesqlv8') : require('mssql');
 
 const app = express();
@@ -529,9 +533,9 @@ async function handleDeviceRequest(req, res) {
 app.post('/api/device', handleDeviceRequest);
 app.post('/api/openclaw', handleDeviceRequest);
 
-if (process.env.VERCEL) {
-  module.exports = app;
-} else {
+module.exports = app;
+
+if (require.main === module && !process.env.VERCEL) {
   ensureDatabase()
     .then(() => {
     app.listen(port, () => {

@@ -685,6 +685,7 @@ const API_BASE_URL = String(
 const DEVICE_API_ENDPOINT = `${API_BASE_URL}/api/device`;
 const QUOTATION_API_ENDPOINT = `${API_BASE_URL}/api/quotations`;
 const QUOTATION_ASSISTANT_ENDPOINT = `${API_BASE_URL}/api/quotation-assistant`;
+const API_REQUEST_HEADERS = { "ngrok-skip-browser-warning": "1" };
 
 function money(n, currency = "$") {
   return currency + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -718,7 +719,7 @@ async function callDevice(action, params = {}) {
   try {
     const res = await fetch(DEVICE_API_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...API_REQUEST_HEADERS, "Content-Type": "application/json" },
       body: JSON.stringify({ action, params }),
     });
     if (!res.ok) {
@@ -740,7 +741,7 @@ async function saveQuotationRecord(record) {
   try {
     const response = await fetch(QUOTATION_API_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...API_REQUEST_HEADERS, "Content-Type": "application/json" },
       body: JSON.stringify(record),
     });
     const result = await response.json();
@@ -753,7 +754,7 @@ async function saveQuotationRecord(record) {
 
 async function getSavedQuotations() {
   try {
-    const response = await fetch(`${QUOTATION_API_ENDPOINT}?limit=100`);
+    const response = await fetch(`${QUOTATION_API_ENDPOINT}?limit=100`, { headers: API_REQUEST_HEADERS });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
     const seenQuoteNumbers = new Set();
@@ -774,7 +775,7 @@ async function getSavedQuotations() {
 
 async function getSavedQuotation(id) {
   try {
-    const response = await fetch(`${QUOTATION_API_ENDPOINT}/${id}`);
+    const response = await fetch(`${QUOTATION_API_ENDPOINT}/${id}`, { headers: API_REQUEST_HEADERS });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
     return { ok: true, record: result.record };
@@ -785,7 +786,7 @@ async function getSavedQuotation(id) {
 
 async function getNextQuotationNumber() {
   try {
-    const response = await fetch(`${QUOTATION_API_ENDPOINT}/next-number`);
+    const response = await fetch(`${QUOTATION_API_ENDPOINT}/next-number`, { headers: API_REQUEST_HEADERS });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
     return { ok: true, quoteNumber: result.quoteNumber };
@@ -798,7 +799,7 @@ async function updateSavedQuotation(id, changes) {
   try {
     const response = await fetch(`${QUOTATION_API_ENDPOINT}/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...API_REQUEST_HEADERS, "Content-Type": "application/json" },
       body: JSON.stringify(changes),
     });
     const responseText = await response.text();
@@ -820,7 +821,7 @@ async function interpretQuotationMessage(message, quotation) {
   try {
     const response = await fetch(QUOTATION_ASSISTANT_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...API_REQUEST_HEADERS, "Content-Type": "application/json" },
       body: JSON.stringify({ message, quotation }),
     });
     const result = await response.json();
