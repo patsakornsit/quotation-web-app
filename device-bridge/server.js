@@ -40,10 +40,11 @@ if (!useWindowsAuthentication && sqlInstance) {
 }
 
 let dbPool;
+let databaseInitialization;
 
 async function initializeDatabase() {
-  dbPool = await sql.connect(sqlConfig);
-  await dbPool.request().query(`
+  const pool = await new sql.ConnectionPool(sqlConfig).connect();
+  await pool.request().query(`
     IF OBJECT_ID(N'dbo.quotations', N'U') IS NULL
     BEGIN
       CREATE TABLE dbo.quotations (
@@ -94,6 +95,19 @@ async function initializeDatabase() {
     )
       ALTER TABLE dbo.quotation_items ALTER COLUMN item_name NVARCHAR(MAX) NOT NULL;
   `);
+  dbPool = pool;
+  return dbPool;
+}
+
+function ensureDatabase() {
+  if (dbPool?.connected) return Promise.resolve(dbPool);
+  if (!databaseInitialization) {
+    databaseInitialization = initializeDatabase().catch((error) => {
+      databaseInitialization = null;
+      throw error;
+    });
+  }
+  return databaseInitialization;
 }
 
 const OPENCLAW_API_URL = process.env.OPENCLAW_API_URL;
@@ -132,7 +146,25 @@ if (OPENCLAW_MODE === 'serial') {
   }
 }
 
-app.get('/api/health', (req, res) => res.json({ ok: true, database: dbPool?.connected ? 'connected' : 'disconnected' }));
+app.get('/', (req, res) => res.json({ ok: true, service: 'quotation-api', health: '/api/health' }));
+
+app.get('/api/health', async (req, res) => {
+  try {
+    await ensureDatabase();
+    return res.json({ ok: true, database: 'connected' });
+  } catch (error) {
+    return res.status(503).json({ ok: false, database: 'disconnected', error: error.message || String(error) });
+  }
+});
+
+app.use('/api/quotations', async (req, res, next) => {
+  try {
+    await ensureDatabase();
+    return next();
+  } catch (error) {
+    return res.status(503).json({ ok: false, error: `Database connection failed: ${error.message || String(error)}` });
+  }
+});
 
 app.post('/api/quotations', async (req, res) => {
   const record = req.body || {};
@@ -497,8 +529,11 @@ async function handleDeviceRequest(req, res) {
 app.post('/api/device', handleDeviceRequest);
 app.post('/api/openclaw', handleDeviceRequest);
 
-initializeDatabase()
-  .then(() => {
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  ensureDatabase()
+    .then(() => {
     app.listen(port, () => {
       console.log(`Device bridge listening on http://localhost:${port}`);
       const sqlLocation = useWindowsAuthentication
@@ -506,8 +541,9 @@ initializeDatabase()
         : (sqlConfig.options.instanceName ? `${sqlConfig.server}\\${sqlConfig.options.instanceName}` : `${sqlConfig.server}:${sqlConfig.port}`);
       console.log(`SQL Server database: ${sqlLocation}/${sqlConfig.database} (${useWindowsAuthentication ? 'Windows' : 'SQL'} authentication)`);
     });
-  })
-  .catch((error) => {
-    console.error('Could not connect to SQL Server:', error);
-    process.exitCode = 1;
-  });
+    })
+    .catch((error) => {
+      console.error('Could not connect to SQL Server:', error);
+      process.exitCode = 1;
+    });
+}
