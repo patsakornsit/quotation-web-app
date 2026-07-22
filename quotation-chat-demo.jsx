@@ -134,6 +134,10 @@ body {
 .history-status { display: inline-block; border: 1px solid #b8ad98; border-radius: 20px; padding: 3px 7px; font-size: 9px; }
 .history-load { border: 0; border-radius: 3px; background: #1E2A38; color: white; padding: 7px 11px; cursor: pointer; }
 .history-load:disabled { opacity: .5; cursor: wait; }
+.record-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.history-delete { border: 1px solid #A63A2E; border-radius: 3px; background: transparent; color: #A63A2E; padding: 7px 9px; cursor: pointer; }
+.history-delete:hover { background: #A63A2E; color: white; }
+.history-delete:disabled { opacity: .5; cursor: wait; }
 .history-empty { padding: 34px; text-align: center; border: 1px dashed #c6bdab; color: #66717c; }
 .history-error { padding: 12px; background: #f4dcd7; color: #8b3027; border-radius: 4px; margin-bottom: 12px; }
 
@@ -342,7 +346,8 @@ table.items tbody td:first-child {
   .history-modal { padding: 10px; }
   .history-panel { padding: 14px; max-height: 94vh; }
   .history-row { grid-template-columns: 1fr 1fr; }
-  .history-load { grid-column: 1 / -1; }
+  .record-actions { grid-column: 1 / -1; }
+  .record-actions button { flex: 1; }
   .paper-toolbar { flex-wrap: wrap; align-items: stretch; }
   .paper-toolbar .label { width: 100%; }
   .page-tabs { flex: 1 1 auto; }
@@ -817,6 +822,20 @@ async function updateSavedQuotation(id, changes) {
   }
 }
 
+async function deleteSavedQuotation(id) {
+  try {
+    const response = await fetch(`${QUOTATION_API_ENDPOINT}/${id}`, {
+      method: "DELETE",
+      headers: API_REQUEST_HEADERS,
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    return { ok: true, ...result };
+  } catch (error) {
+    return { ok: false, error: error.message || String(error) };
+  }
+}
+
 async function interpretQuotationMessage(message, quotation) {
   try {
     const response = await fetch(QUOTATION_ASSISTANT_ENDPOINT, {
@@ -869,6 +888,7 @@ export default function LedgerQuotationDemo() {
   const [historyError, setHistoryError] = useState("");
   const [historyQuery, setHistoryQuery] = useState("");
   const [loadingRecordId, setLoadingRecordId] = useState(null);
+  const [deletingRecordId, setDeletingRecordId] = useState(null);
   const logRef = useRef(null);
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 
@@ -951,6 +971,21 @@ export default function LedgerQuotationDemo() {
       setHistoryRecords(previousRecords);
       setHistoryError(`Could not update status: ${result.error}`);
     }
+  }
+
+  async function removePreviousQuotation(record) {
+    if (!window.confirm(`Delete quotation ${record.quoteNumber} for ${record.client}? This cannot be undone.`)) return;
+    setDeletingRecordId(record.id);
+    setHistoryError("");
+    const result = await deleteSavedQuotation(record.id);
+    setDeletingRecordId(null);
+    if (!result.ok) {
+      setHistoryError(`Could not delete quotation: ${result.error}`);
+      return;
+    }
+    setHistoryRecords((records) => records.filter((item) => item.quoteNumber !== record.quoteNumber));
+    if (lastSaved?.id === record.id) setLastSaved(null);
+    addMsg(`Deleted quotation ${record.quoteNumber} from Previous Quotations.`, "bot");
   }
 
   async function toggleDepositPaid(record, installmentIndex) {
@@ -1761,7 +1796,12 @@ export default function LedgerQuotationDemo() {
                           <option>Draft</option><option>Sent</option><option>Accepted</option><option>Rejected</option><option>Receipt created</option><option>Paid</option>
                         </select>
                       </div>
-                      <button className="history-load" onClick={() => loadPreviousQuotation(record.id)}>Open</button>
+                      <div className="record-actions">
+                        <button className="history-load" onClick={() => loadPreviousQuotation(record.id)}>Open</button>
+                        <button className="history-delete" disabled={deletingRecordId !== null} onClick={() => removePreviousQuotation(record)}>
+                          {deletingRecordId === record.id ? "Deleting…" : "Delete"}
+                        </button>
+                      </div>
                     </div>
                     <div className="payment-tracker">
                       {schedule.map((rate, index) => {
@@ -1813,9 +1853,14 @@ export default function LedgerQuotationDemo() {
                     <div><small>Client</small><strong>{record.client}</strong></div>
                     <div><small>Total</small><strong>{money(record.total, record.currency)}</strong></div>
                     <div><small>Status</small><span className="history-status">{record.status}</span></div>
-                    <button className="history-load" disabled={loadingRecordId !== null} onClick={() => loadPreviousQuotation(record.id)}>
-                      {loadingRecordId === record.id ? "Loading…" : "Use"}
-                    </button>
+                    <div className="record-actions">
+                      <button className="history-load" disabled={loadingRecordId !== null || deletingRecordId !== null} onClick={() => loadPreviousQuotation(record.id)}>
+                        {loadingRecordId === record.id ? "Loading…" : "Use"}
+                      </button>
+                      <button className="history-delete" disabled={deletingRecordId !== null || loadingRecordId !== null} onClick={() => removePreviousQuotation(record)}>
+                        {deletingRecordId === record.id ? "Deleting…" : "Delete"}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

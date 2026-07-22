@@ -339,6 +339,37 @@ app.get('/api/quotations/:id', async (req, res) => {
   }
 });
 
+app.delete('/api/quotations/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ ok: false, error: 'Invalid record id' });
+  try {
+    const readRequest = dbPool.request();
+    readRequest.input('id', sql.Int, id);
+    const existingResult = await readRequest.query(`
+      SELECT quote_number AS quoteNumber, document_type AS documentType
+      FROM dbo.quotations WHERE id = @id
+    `);
+    const existing = existingResult.recordset[0];
+    if (!existing) return res.status(404).json({ ok: false, error: 'Record not found' });
+
+    const deleteRequest = dbPool.request();
+    deleteRequest.input('quoteNumber', sql.NVarChar(100), existing.quoteNumber);
+    deleteRequest.input('documentType', sql.NVarChar(30), existing.documentType);
+    const deleteResult = await deleteRequest.query(`
+      DELETE FROM dbo.quotations
+      OUTPUT DELETED.id
+      WHERE quote_number = @quoteNumber AND document_type = @documentType
+    `);
+    return res.json({
+      ok: true,
+      quoteNumber: existing.quoteNumber,
+      deleted: deleteResult.recordset.length,
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message || String(error) });
+  }
+});
+
 app.patch('/api/quotations/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ ok: false, error: 'Invalid record id' });
