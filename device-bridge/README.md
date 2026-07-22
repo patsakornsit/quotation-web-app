@@ -16,10 +16,13 @@ npm install
 npm start
 ```
 
-3. The bridge listens on `http://localhost:3001` by default. From the demo frontend you can either:
+3. The bridge listens on port `3001` and accepts local-network connections. The frontend automatically uses the same hostname it was opened from. For a fixed server address, copy the root `.env.example` to `.env` and set:
 
-- Use a dev proxy so `/api/device` is proxied to `http://localhost:3001/api/device` (recommended when running the React dev server), or
-- Edit the client fetch URL in `quotation-chat-demo.jsx` to point at `http://localhost:3001/api/device`.
+```text
+VITE_API_BASE_URL=http://YOUR_COMPUTER_LAN_IP:3001
+```
+
+To open the app on a phone, connect both devices to the same Wi-Fi network and visit `http://YOUR_COMPUTER_LAN_IP:5173` on the phone.
 
 Test
 ----

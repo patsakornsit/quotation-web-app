@@ -77,7 +77,7 @@ async function initializeDatabase() {
       CREATE TABLE dbo.quotation_items (
         id INT IDENTITY(1,1) PRIMARY KEY,
         quotation_id INT NOT NULL,
-        item_name NVARCHAR(500) NOT NULL,
+        item_name NVARCHAR(MAX) NOT NULL,
         quantity DECIMAL(18,4) NOT NULL,
         unit_price DECIMAL(18,2) NOT NULL,
         amount DECIMAL(18,2) NOT NULL,
@@ -85,6 +85,14 @@ async function initializeDatabase() {
           REFERENCES dbo.quotations(id) ON DELETE CASCADE
       );
     END;
+
+    IF EXISTS (
+      SELECT 1 FROM sys.columns
+      WHERE object_id = OBJECT_ID(N'dbo.quotation_items')
+        AND name = N'item_name'
+        AND max_length <> -1
+    )
+      ALTER TABLE dbo.quotation_items ALTER COLUMN item_name NVARCHAR(MAX) NOT NULL;
   `);
 }
 
@@ -134,10 +142,21 @@ app.post('/api/quotations', async (req, res) => {
   }
   const transaction = new sql.Transaction(dbPool);
   try {
-    await transaction.begin();
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+    const documentType = record.documentType === 'receipt' ? 'receipt' : 'quotation';
+    const lookupRequest = new sql.Request(transaction);
+    lookupRequest.input('quoteNumber', sql.NVarChar(100), String(record.quoteNumber));
+    lookupRequest.input('documentType', sql.NVarChar(30), documentType);
+    const existingResult = await lookupRequest.query(`
+      SELECT TOP (1) id
+      FROM dbo.quotations WITH (UPDLOCK, HOLDLOCK)
+      WHERE quote_number = @quoteNumber AND document_type = @documentType
+      ORDER BY id DESC
+    `);
+    const existingId = existingResult.recordset[0] ? Number(existingResult.recordset[0].id) : null;
     const request = new sql.Request(transaction);
     request.input('quoteNumber', sql.NVarChar(100), String(record.quoteNumber));
-    request.input('documentType', sql.NVarChar(30), record.documentType === 'receipt' ? 'receipt' : 'quotation');
+    request.input('documentType', sql.NVarChar(30), documentType);
     request.input('client', sql.NVarChar(300), String(record.client));
     request.input('status', sql.NVarChar(100), String(record.status || 'Draft'));
     request.input('subtotal', sql.Decimal(18, 2), Number(record.subtotal) || 0);
@@ -156,25 +175,45 @@ app.post('/api/quotations', async (req, res) => {
     request.input('signatureImage', sql.NVarChar(sql.MAX), String(record.confirmationSignatureImage || ''));
     request.input('note', sql.NVarChar(sql.MAX), String(record.note || ''));
     request.input('template', sql.NVarChar(sql.MAX), JSON.stringify(record.template || {}));
-    const result = await request.query(`
-      INSERT INTO dbo.quotations (
-        quote_number, document_type, client, status, subtotal, tax, total, currency, tax_rate,
-        deposit_rate, deposit_amount, deposit_enabled, deposit_comment, deposit_schedule_json,
-        deposit_payment_statuses_json, confirmation_name, confirmation_signature,
-        confirmation_signature_image, note, template_json
-      )
-      OUTPUT INSERTED.id
-      VALUES (@quoteNumber, @documentType, @client, @status, @subtotal, @tax, @total, @currency,
-        @taxRate, @depositRate, @depositAmount, @depositEnabled, @depositComment, @depositSchedule,
-        @paymentStatuses, @confirmationName, @confirmationSignature, @signatureImage, @note, @template)
-    `);
-    const quotationId = Number(result.recordset[0].id);
+    let quotationId;
+    if (existingId) {
+      request.input('id', sql.Int, existingId);
+      await request.query(`
+        UPDATE dbo.quotations SET
+          client = @client, status = @status, subtotal = @subtotal, tax = @tax, total = @total,
+          currency = @currency, tax_rate = @taxRate, deposit_rate = @depositRate,
+          deposit_amount = @depositAmount, deposit_enabled = @depositEnabled,
+          deposit_comment = @depositComment, deposit_schedule_json = @depositSchedule,
+          deposit_payment_statuses_json = @paymentStatuses, confirmation_name = @confirmationName,
+          confirmation_signature = @confirmationSignature, confirmation_signature_image = @signatureImage,
+          note = @note, template_json = @template, exported_at = SYSUTCDATETIME()
+        WHERE id = @id
+      `);
+      quotationId = existingId;
+      const deleteItemsRequest = new sql.Request(transaction);
+      deleteItemsRequest.input('quotationId', sql.Int, quotationId);
+      await deleteItemsRequest.query(`DELETE FROM dbo.quotation_items WHERE quotation_id = @quotationId`);
+    } else {
+      const result = await request.query(`
+        INSERT INTO dbo.quotations (
+          quote_number, document_type, client, status, subtotal, tax, total, currency, tax_rate,
+          deposit_rate, deposit_amount, deposit_enabled, deposit_comment, deposit_schedule_json,
+          deposit_payment_statuses_json, confirmation_name, confirmation_signature,
+          confirmation_signature_image, note, template_json
+        )
+        OUTPUT INSERTED.id
+        VALUES (@quoteNumber, @documentType, @client, @status, @subtotal, @tax, @total, @currency,
+          @taxRate, @depositRate, @depositAmount, @depositEnabled, @depositComment, @depositSchedule,
+          @paymentStatuses, @confirmationName, @confirmationSignature, @signatureImage, @note, @template)
+      `);
+      quotationId = Number(result.recordset[0].id);
+    }
     for (const item of items) {
       const quantity = Number(item.qty) || 0;
       const unitPrice = Number(item.price) || 0;
       const itemRequest = new sql.Request(transaction);
       itemRequest.input('quotationId', sql.Int, quotationId);
-      itemRequest.input('itemName', sql.NVarChar(500), String(item.name || 'Item'));
+      itemRequest.input('itemName', sql.NVarChar(sql.MAX), String(item.name || 'Item'));
       itemRequest.input('quantity', sql.Decimal(18, 4), quantity);
       itemRequest.input('unitPrice', sql.Decimal(18, 2), unitPrice);
       itemRequest.input('amount', sql.Decimal(18, 2), quantity * unitPrice);
@@ -184,7 +223,7 @@ app.post('/api/quotations', async (req, res) => {
       `);
     }
     await transaction.commit();
-    return res.status(201).json({ ok: true, id: quotationId });
+    return res.status(existingId ? 200 : 201).json({ ok: true, id: quotationId, updated: Boolean(existingId) });
   } catch (error) {
     try { await transaction.rollback(); } catch {}
     return res.status(500).json({ ok: false, error: error.message || String(error) });
@@ -197,13 +236,22 @@ app.get('/api/quotations', async (req, res) => {
     const request = dbPool.request();
     request.input('limit', sql.Int, limit);
     const result = await request.query(`
+      WITH latest_records AS (
+        SELECT *, ROW_NUMBER() OVER (
+          PARTITION BY quote_number, document_type
+          ORDER BY id DESC
+        ) AS duplicateRank
+        FROM dbo.quotations
+      )
       SELECT TOP (@limit) id, quote_number AS quoteNumber, document_type AS documentType,
         client, status, subtotal, tax, total, currency, tax_rate AS taxRate,
         deposit_rate AS depositRate, deposit_amount AS depositAmount,
         deposit_enabled AS depositEnabled, deposit_comment AS depositComment,
         deposit_schedule_json AS depositScheduleJson, deposit_payment_statuses_json AS depositPaymentStatusesJson,
         note, exported_at AS exportedAt
-      FROM dbo.quotations ORDER BY id DESC
+      FROM latest_records
+      WHERE duplicateRank = 1
+      ORDER BY id DESC
     `);
     const records = result.recordset.map(normalizeQuotationRecord);
     return res.json({ ok: true, records });
@@ -356,7 +404,7 @@ Allowed actions:
 {"type":"create_receipt"}
 {"type":"export_pdf"}
 The words "collection", "collections", "payment term", "installment", and "deposit" refer to payment terms unless the user explicitly says they are a billable line item.
-"Use 3 collections", "change deposit to 3 collections", or similar MUST produce {"type":"set_deposit","enabled":true,"schedule":[20,50,30]} and MUST NOT add or update an item.
+"Use 3 collections", "change deposit to 3 collections", or similar MUST produce {"type":"set_deposit","enabled":true,"schedule":[55,25,20]} and MUST NOT add or update an item.
 "Use 2 collections" MUST produce {"type":"set_deposit","enabled":true,"schedule":[30,70]} and MUST NOT add or update an item.
 "Comment" or "payment comment" means the Payment comment beside the deposit controls and MUST use set_payment_comment. "Quotation note" or "general note" MUST use set_note.
 Changing a payment comment MUST NOT change deposit enabled state or the deposit schedule.

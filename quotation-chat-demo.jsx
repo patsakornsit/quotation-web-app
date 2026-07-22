@@ -185,6 +185,21 @@ table.items tbody td:first-child {
   width: 52%; max-width: 0; padding-right: 14px; white-space: pre-wrap;
   overflow-wrap: anywhere; word-break: break-word; line-height: 1.45;
 }
+.package-item-row td.package-item-cell { width: auto; max-width: none; padding: 10px 0; white-space: normal; }
+.package-item-heading {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+  padding-bottom: 7px; margin-bottom: 8px; border-bottom: 1px solid #c9c0a8;
+}
+.package-item-heading strong { display: block; font-size: 16px; line-height: 1.35; }
+.package-item-heading small { display: block; margin-top: 4px; color: var(--ink-soft); font-size: 11.5px; line-height: 1.4; }
+.package-item-price { text-align: right; white-space: nowrap; font-size: 15px; font-weight: 700; }
+.package-item-actions { display: flex; align-items: flex-start; gap: 8px; }
+.package-item-actions .remove-x { font-size: 12px; }
+.package-scope {
+  columns: 2 220px; column-gap: 20px; column-rule: 1px solid rgba(69,86,106,.2);
+  white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.45 'Inter', sans-serif;
+}
+.package-a-item .package-scope { font-size: 14px; line-height: 1.55; }
 .empty-row td { padding: 22px 0; text-align: center; color: #a49c86; font-style: italic; font-family: 'Inter', sans-serif; font-size: 12.5px; }
 .remove-x { color: var(--accent-red); cursor: pointer; font-size: 11px; opacity: 0.55; padding-left: 8px; }
 .remove-x:hover { opacity: 1; }
@@ -222,9 +237,9 @@ table.items tbody td:first-child {
 .deposit-comment textarea {
   width: 100%; min-height: 54px; box-sizing: border-box; resize: vertical; border: 1px solid #a9a18e;
   border-radius: 3px; background: rgba(255,255,255,.25); color: var(--ink); padding: 7px 8px;
-  font: 11px 'Inter', sans-serif; line-height: 1.4;
+  font: 13px 'Inter', sans-serif; line-height: 1.45;
 }
-.deposit-comment-print { display: none; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px 'Inter', sans-serif; line-height: 1.4; }
+.deposit-comment-print { display: none; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px 'Inter', sans-serif; line-height: 1.45; }
 .cash-payment { margin-top: 10px; padding: 9px 0; border-top: 1px solid #c9c0a8; border-bottom: 1px solid #c9c0a8; display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
 
 .quote-summary {
@@ -304,13 +319,60 @@ table.items tbody td:first-child {
 .summary-error { margin-top: 14px; padding: 10px; background: #f4dcd7; color: #8b3027; font-size: 11px; }
 
 @media (max-width: 760px) {
+  html, body, #root { height: auto; min-height: 100%; }
+  .ledger-app {
+    display: flex; flex-direction: column; min-height: 100vh;
+    border-radius: 0; overflow: visible;
+  }
+  .chat-side {
+    height: 58svh; min-height: 420px; flex: none;
+    border-right: 0; border-bottom: 1px solid #05090d;
+  }
+  .chat-header { padding: 14px 14px 11px; }
+  .chat-log { padding: 12px 14px; }
+  .msg { max-width: 90%; font-size: 13px; }
+  .suggestions {
+    padding: 0 14px 9px; flex-wrap: nowrap; overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .chip { flex: 0 0 auto; }
+  .chat-input-row { padding: 11px 14px 14px; }
+  .send-btn { padding: 0 13px; }
+  .paper-side { padding: 18px 12px 36px; overflow: visible; background-position: 0 90px; }
   .history-modal { padding: 10px; }
-  .history-panel { padding: 16px; }
+  .history-panel { padding: 14px; max-height: 94vh; }
   .history-row { grid-template-columns: 1fr 1fr; }
   .history-load { grid-column: 1 / -1; }
-  .paper-toolbar { flex-wrap: wrap; }
+  .paper-toolbar { flex-wrap: wrap; align-items: stretch; }
   .paper-toolbar .label { width: 100%; }
+  .page-tabs { flex: 1 1 auto; }
+  .page-tab { flex: 1; }
+  .pdf-btn { flex: 1 1 auto; padding: 8px 9px; font-size: 9px; }
+  .quote-head { gap: 12px; }
+  .quote-head h1 { font-size: 25px; }
+  .quote-meta { flex: 0 0 auto; font-size: 10px; }
+  .quote-number-input { width: 78px; }
+  .quote-parties { flex-direction: column; gap: 10px; margin-top: 12px; }
+  table.items { table-layout: fixed; font-size: 10px; }
+  table.items th:nth-child(3),
+  table.items td:not(.package-item-cell):nth-child(3) { display: none; }
+  table.items tbody td:first-child { width: 58%; padding-right: 8px; }
+  .package-item-heading { gap: 8px; }
+  .package-item-heading strong { font-size: 13px; }
+  .package-item-price { font-size: 12px; }
+  .package-scope, .package-a-item .package-scope { columns: 1; font-size: 11px; line-height: 1.45; }
+  .totals { width: min(220px, 100%); }
+  .deposit-note { width: 100%; }
+  .deposit-installment { grid-template-columns: 1fr 58px; }
+  .deposit-installment strong { grid-column: 1 / -1; text-align: left; }
+  .confirmation { width: 100%; margin-top: 24px; }
+  .template-modal, .receipt-modal { padding: 8px; align-items: flex-start; overflow-y: auto; }
+  .template-panel, .receipt-sheet { padding: 18px 14px; }
+  .template-grid { grid-template-columns: 1fr; }
+  .template-field.wide { grid-column: auto; }
+  .summary-kpis { grid-template-columns: 1fr; gap: 8px; }
   .summary-record-main { grid-template-columns: 1fr 1fr; }
+  .summary-actions { grid-template-columns: 1fr; }
 }
 
 @media print {
@@ -358,6 +420,35 @@ table.items tbody td:first-child {
   .deposit-comment textarea { display: none; }
   .deposit-comment-print { display: block; }
   .quote-number-input, .confirmation input { border-bottom-color: transparent; }
+  .package-item-heading { padding-bottom: 4px; margin-bottom: 5px; }
+  .package-item-heading strong { font-size: 12.5px; }
+  .package-item-heading small { font-size: 8.5px; }
+  .package-item-price { font-size: 12px; }
+  .package-item-actions .remove-x { display: none; }
+  .package-scope {
+    columns: 3; column-gap: 10px; column-rule: 1px solid rgba(69,86,106,.2);
+    font-size: 8.2px; line-height: 1.24;
+  }
+  .package-quote .deposit-note { width: 100%; margin-top: 8px; padding: 6px 8px; }
+  .package-quote .deposit-comment { margin-top: 5px; }
+  .package-quote .deposit-comment label { margin-bottom: 3px; font-size: 8px; }
+  .package-quote .deposit-comment-print {
+    columns: 2; column-gap: 12px; column-rule: 1px solid rgba(69,86,106,.2);
+    font-size: 8.2px; line-height: 1.24;
+  }
+  .package-quote .confirmation { margin-top: 12px; }
+  .package-a-quote .package-item-heading { padding-bottom: 7px; margin-bottom: 8px; }
+  .package-a-quote .package-item-heading strong { font-size: 14px; }
+  .package-a-quote .package-item-heading small { font-size: 10px; }
+  .package-a-quote .package-item-price { font-size: 13px; }
+  .package-a-quote .package-scope {
+    columns: 2; column-gap: 18px;
+    font-size: 10.5px; line-height: 1.42;
+  }
+  .package-a-quote .deposit-comment label { font-size: 9px; }
+  .package-a-quote .deposit-comment-print { font-size: 9.2px; line-height: 1.34; }
+  table.items { margin-top: 10px; }
+  table.items tbody td { padding-top: 5px; padding-bottom: 5px; }
   .signature-upload-controls { display: none; }
   .template-modal { display: none !important; }
   .history-modal { display: none !important; }
@@ -379,7 +470,7 @@ table.items tbody td:first-child {
 const DEFAULT_TEMPLATE = {
   title: "Quotation",
   tagline: "generated in chat, priced on paper",
-  companyName: "Fieldstone Studio",
+  companyName: "JOYA Atelier",
   footer: "Ledger demo · this preview is what gets exported to PDF",
   currency: "$",
   taxRate: 7,
@@ -394,7 +485,160 @@ const initialMessage = {
   text: `Hi — I'm the Ledger demo agent. Tell me a client, add line items, and I'll build the quotation on the right in real time. Try a suggestion below, or type "add Logo design, 1, 800".`,
 };
 
+const PACKAGE_A_ITEM = {
+  buttonLabel: "PACKAGE A",
+  qty: 1,
+  price: 90000,
+  name: `PACKAGE A
+
+Interior Design Package
+
+ค่าบริการออกแบบ : 90,000 บาท
+
+ขอบเขตการให้บริการ (Scope of Services)
+
+1. สำรวจและวิเคราะห์ความต้องการ
+• ประชุมรับฟังความต้องการ (Design Brief)
+• วิเคราะห์รูปแบบการใช้งาน (Space Requirement)
+• ศึกษาพื้นที่และข้อจำกัดของโครงการ
+
+2. การออกแบบพื้นที่ (Space Planning)
+• จัดทำผังการใช้งาน (Layout Plan)
+• วางตำแหน่งเฟอร์นิเจอร์และฟังก์ชันการใช้งาน
+• ปรับปรุงผังให้เหมาะสมกับการใช้งานจริง
+
+3. แนวคิดการออกแบบ (Concept Design)
+• จัดทำ Mood & Material Board
+• กำหนดโทนสี วัสดุ และบรรยากาศของโครงการ
+• นำเสนอแนวคิดการออกแบบโดยรวม
+
+4. ภาพจำลองสามมิติ (3D Perspective)
+• จัดทำภาพ Perspective สำหรับนำเสนอแนวคิดการออกแบบ
+• เพื่อแสดงบรรยากาศและภาพรวมของพื้นที่ก่อนดำเนินการก่อสร้าง
+
+5. แบบก่อสร้างงานตกแต่งภายใน (Working Drawing)
+จัดทำแบบก่อสร้างที่เกี่ยวข้องกับงานตกแต่งภายใน เช่น
+• แบบแปลนงานตกแต่งภายใน
+• แบบขยายงานบิลท์อิน (Built-in Detail)
+• แบบรายละเอียดเฟอร์นิเจอร์บิลท์อิน
+• แบบรายละเอียดวัสดุที่เกี่ยวข้องกับงานออกแบบ
+(รายละเอียดแบบขึ้นอยู่กับขอบเขตของโครงการ)
+
+6. BOQ (Quantity Take-off)
+จัดทำรายการปริมาณงานสำหรับ
+• งานตกแต่งภายใน
+• งานเฟอร์นิเจอร์บิลท์อิน
+เพื่อใช้ประกอบการขอใบเสนอราคาจากผู้รับเหมา
+
+หมายเหตุ
+BOQ เป็นการถอดปริมาณงาน (Quantity Take-off) เท่านั้น
+ไม่รวมการจัดทำราคากลาง
+ไม่รวมการเปรียบเทียบราคาผู้รับเหมา
+ไม่รวมการบริหารต้นทุนโครงการ
+
+7. การแก้ไขแบบ (Revision)
+รวมการแก้ไขแบบไม่เกิน 3 รอบ
+การแก้ไขต้องอยู่ภายใต้แนวคิดและขอบเขตงานเดิม
+หากมีการเปลี่ยนแปลงแนวคิด (Concept) หรือเพิ่มขอบเขตงานภายหลังการอนุมัติแบบ จะถือเป็นงานเพิ่มเติมและเสนอค่าบริการแยกต่างหาก
+
+ไม่รวมในขอบเขตงาน (Exclusions)
+
+ค่าบริการนี้ ไม่รวม
+
+งานรื้อถอนและซ่อมแซม
+• งานรื้อถอน
+• งานซ่อมแซมพื้นที่เดิม
+• งานแก้ไขความเสียหายที่พบภายหลังการรื้อถอน
+
+งานโครงสร้าง
+• งานวิศวกรรมโครงสร้าง
+• แบบโครงสร้าง
+• การรับรองแบบโดยวิศวกร
+
+งานระบบอาคาร
+• ระบบไฟฟ้า
+• ระบบประปาและสุขาภิบาล
+• ระบบปรับอากาศ
+• ระบบระบายอากาศ
+• ระบบดับเพลิง
+• ระบบสื่อสารและระบบพิเศษทุกประเภท
+
+งานก่อสร้าง
+• ควบคุมงานก่อสร้าง
+• บริหารโครงการ
+• ตรวจรับงานผู้รับเหมา
+• ประสานงานผู้รับเหมา
+• จัดซื้อวัสดุและอุปกรณ์
+
+งานอื่น ๆ
+• ขออนุญาตก่อสร้าง
+• ยื่นแบบต่อหน่วยงานราชการ
+• ค่าที่ปรึกษาวิศวกร
+• ค่าเดินทางและค่าใช้จ่ายนอกพื้นที่ (หากมี)`,
+};
+
+const PACKAGE_B_ITEM = {
+  buttonLabel: "PACKAGE B",
+  qty: 1,
+  price: 115000,
+  name: `PACKAGE B
+
+Interior Design + Interior Electrical Package
+
+ค่าบริการออกแบบ : 115,000 บาท
+
+รวมบริการทั้งหมดใน Package A
+
+พร้อมเพิ่มเติม
+
+งานออกแบบระบบไฟฟ้าสำหรับงานตกแต่งภายใน
+
+ประกอบด้วย
+• Lighting Layout
+• Power Layout
+• Switching Layout
+• Lighting Fixture Schedule
+• Electrical Load Schedule (สำหรับงานตกแต่งภายใน)
+• ประสานตำแหน่งงานระบบกับงานบิลท์อินและงานตกแต่ง
+
+ไม่รวม
+• การคำนวณโหลดระบบไฟฟ้าหลักของอาคาร
+• Single Line Diagram (SLD)
+• การออกแบบตู้เมนไฟฟ้า (MDB/DB)
+• การรับรองแบบโดยวิศวกรไฟฟ้า`,
+};
+
+const PACKAGE_ITEMS = [PACKAGE_A_ITEM, PACKAGE_B_ITEM];
+
+function packageDefinition(item) {
+  const name = String(item?.name || "");
+  return PACKAGE_ITEMS.find((packageItem) => name.startsWith(`${packageItem.buttonLabel}\n\n`));
+}
+
+function isPackageItem(item) {
+  return Boolean(packageDefinition(item));
+}
+
+function packageDetails(name) {
+  const fullText = String(name || "");
+  const detailMarkers = [
+    "ขอบเขตการให้บริการ (Scope of Services)",
+    "รวมบริการทั้งหมดใน Package A",
+  ];
+  const detailStart = detailMarkers
+    .map((marker) => fullText.indexOf(marker))
+    .filter((index) => index >= 0)
+    .sort((a, b) => a - b)[0];
+  return Number.isInteger(detailStart) ? fullText.slice(detailStart) : fullText;
+}
+
+function itemShortLabel(item) {
+  return packageDefinition(item)?.buttonLabel || String(item?.name || "Item");
+}
+
 const SUGGESTIONS = [
+  PACKAGE_A_ITEM.buttonLabel,
+  PACKAGE_B_ITEM.buttonLabel,
   "Open previous quotations",
   "Open summary",
   "create quotation name: Patsakorn Sit subject: Website design qty: 1 price: 500",
@@ -408,12 +652,39 @@ const SUGGESTIONS = [
 
 const DEPOSIT_SCHEDULES = {
   2: [30, 70],
-  3: [20, 50, 30],
+  3: [55, 25, 20],
 };
 
-const DEVICE_API_ENDPOINT = "http://localhost:3001/api/device";
-const QUOTATION_API_ENDPOINT = "http://localhost:3001/api/quotations";
-const QUOTATION_ASSISTANT_ENDPOINT = "http://localhost:3001/api/quotation-assistant";
+const DEFAULT_DEPOSIT_TERMS = [
+  "ยืนยันการว่าจ้างและเริ่มดำเนินงาน",
+  "หลังอนุมัติ Concept, Layout และ Perspective",
+  "ก่อนส่งมอบ Working Drawing, BOQ และไฟล์ต้นฉบับทั้งหมด",
+];
+
+const DEFAULT_PAYMENT_COMMENT = `เงื่อนไข
+
+1. หากค้างชำระ
+ผู้ออกแบบขอสงวนสิทธิ์ในการระงับการดำเนินงานจนกว่าจะได้รับชำระเงินตามงวด
+
+2. การส่งไฟล์
+ไฟล์ต้นฉบับ (.DWG, .SKP, .PDF, Render ความละเอียดสูง และ BOQ) จะส่งมอบหลังได้รับชำระเงินครบถ้วน
+
+3. หากลูกค้าหยุดงาน
+หากลูกค้าหยุดโครงการเกิน 30 วัน ผู้ออกแบบสามารถเลื่อนกำหนดส่งงานตามคิวงานปัจจุบันได้
+
+4. หากลูกค้ายกเลิก
+เงินที่ชำระแล้วในแต่ละงวดไม่สามารถขอคืนได้ และผู้ออกแบบจะส่งมอบงานที่ดำเนินการแล้วตามสัดส่วนของงาน`;
+
+function getDefaultDepositSchedule() {
+  return [...DEPOSIT_SCHEDULES[3]];
+}
+
+const API_BASE_URL = String(
+  import.meta.env.VITE_API_BASE_URL || `${window.location.protocol}//${window.location.hostname}:3001`
+).replace(/\/$/, "");
+const DEVICE_API_ENDPOINT = `${API_BASE_URL}/api/device`;
+const QUOTATION_API_ENDPOINT = `${API_BASE_URL}/api/quotations`;
+const QUOTATION_ASSISTANT_ENDPOINT = `${API_BASE_URL}/api/quotation-assistant`;
 
 function money(n, currency = "$") {
   return currency + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -482,10 +753,20 @@ async function saveQuotationRecord(record) {
 
 async function getSavedQuotations() {
   try {
-    const response = await fetch(`${QUOTATION_API_ENDPOINT}?limit=50`);
+    const response = await fetch(`${QUOTATION_API_ENDPOINT}?limit=100`);
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
-    return { ok: true, records: (result.records || []).filter((record) => record.documentType === "quotation") };
+    const seenQuoteNumbers = new Set();
+    const records = [...(result.records || [])]
+      .sort((a, b) => Number(b.id || 0) - Number(a.id || 0))
+      .filter((record) => {
+        if (record.documentType !== "quotation") return false;
+        const quoteNumber = String(record.quoteNumber || "").trim().toUpperCase();
+        if (!quoteNumber || seenQuoteNumbers.has(quoteNumber)) return false;
+        seenQuoteNumbers.add(quoteNumber);
+        return true;
+      });
+    return { ok: true, records };
   } catch (error) {
     return { ok: false, error: error.message || String(error), records: [] };
   }
@@ -551,15 +832,26 @@ async function interpretQuotationMessage(message, quotation) {
 }
 
 export default function LedgerQuotationDemo() {
+  const [template, setTemplate] = useState(() => {
+    try {
+      const savedTemplate = JSON.parse(localStorage.getItem("ledger-quotation-template") || "{}");
+      if (savedTemplate.companyName === "Fieldstone Studio") {
+        savedTemplate.companyName = DEFAULT_TEMPLATE.companyName;
+      }
+      return { ...DEFAULT_TEMPLATE, ...savedTemplate };
+    } catch {
+      return DEFAULT_TEMPLATE;
+    }
+  });
   const [messages, setMessages] = useState([initialMessage]);
   const [input, setInput] = useState("");
   const [client, setClient] = useState("");
   const [items, setItems] = useState([]);
   const [note, setNote] = useState("");
   const [depositEnabled, setDepositEnabled] = useState(true);
-  const [depositComment, setDepositComment] = useState("");
-  const [depositSchedule, setDepositSchedule] = useState(DEPOSIT_SCHEDULES[2]);
-  const [depositPaymentStatuses, setDepositPaymentStatuses] = useState([false, false]);
+  const [depositComment, setDepositComment] = useState(DEFAULT_PAYMENT_COMMENT);
+  const [depositSchedule, setDepositSchedule] = useState(getDefaultDepositSchedule);
+  const [depositPaymentStatuses, setDepositPaymentStatuses] = useState([false, false, false]);
   const [status, setStatus] = useState("Draft");
   const [activePage, setActivePage] = useState("quotation");
   const [confirmationName, setConfirmationName] = useState("");
@@ -576,13 +868,6 @@ export default function LedgerQuotationDemo() {
   const [historyError, setHistoryError] = useState("");
   const [historyQuery, setHistoryQuery] = useState("");
   const [loadingRecordId, setLoadingRecordId] = useState(null);
-  const [template, setTemplate] = useState(() => {
-    try {
-      return { ...DEFAULT_TEMPLATE, ...JSON.parse(localStorage.getItem("ledger-quotation-template") || "{}") };
-    } catch {
-      return DEFAULT_TEMPLATE;
-    }
-  });
   const logRef = useRef(null);
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 
@@ -722,9 +1007,9 @@ export default function LedgerQuotationDemo() {
           setItems([]);
           setNote("");
           setDepositEnabled(true);
-          setDepositComment("");
-          setDepositSchedule(DEPOSIT_SCHEDULES[2]);
-          setDepositPaymentStatuses([false, false]);
+          setDepositComment(DEFAULT_PAYMENT_COMMENT);
+          setDepositSchedule(getDefaultDepositSchedule());
+          setDepositPaymentStatuses(getDefaultDepositSchedule().map(() => false));
           setConfirmationName("");
           setConfirmationSignature("");
           setConfirmationSignatureImage("");
@@ -789,7 +1074,7 @@ export default function LedgerQuotationDemo() {
           }
           const schedule = Array.isArray(action.schedule) && [2, 3].includes(action.schedule.length)
             ? action.schedule.map((rate) => Math.min(100, Math.max(0, Number(rate) || 0)))
-            : DEPOSIT_SCHEDULES[2];
+            : getDefaultDepositSchedule();
           setDepositSchedule(schedule);
           setDepositPaymentStatuses(schedule.map(() => false));
           break;
@@ -858,6 +1143,7 @@ export default function LedgerQuotationDemo() {
     if (!text) return;
     addMsg(text, "user");
     const lower = text.toLowerCase();
+    const selectedPackage = PACKAGE_ITEMS.find((packageItem) => lower === packageItem.buttonLabel.toLowerCase());
     const normalizedNavigationText = lower.replace(/\bopem\b|\boppen\b/g, "open");
     const naturalQuotation = parseNaturalQuotationRequest(text);
     const collectionMatch = text.match(/\b([23])\s*(?:payment\s+)?collections?\b/i)
@@ -871,14 +1157,19 @@ export default function LedgerQuotationDemo() {
     );
     const openSummaryRequested = hasOpenIntent && /\bsummary\b/i.test(normalizedNavigationText);
 
-    if (naturalQuotation) {
+    if (selectedPackage) {
+      setItems((current) => [...current, { name: selectedPackage.name, qty: selectedPackage.qty, price: selectedPackage.price }]);
+      updateTemplate("currency", "฿");
+      setActivePage("quotation");
+      addMsg(`Added ${selectedPackage.buttonLabel} — ${money(selectedPackage.price, "฿")}. The full scope and exclusions are shown in the quotation.`, "bot");
+    } else if (naturalQuotation) {
       setClient(naturalQuotation.client);
       setItems([{ name: naturalQuotation.subject, qty: naturalQuotation.qty, price: naturalQuotation.price }]);
       setNote("");
       setDepositEnabled(true);
-      setDepositComment("");
-      setDepositSchedule(DEPOSIT_SCHEDULES[2]);
-      setDepositPaymentStatuses([false, false]);
+      setDepositComment(DEFAULT_PAYMENT_COMMENT);
+      setDepositSchedule(getDefaultDepositSchedule());
+      setDepositPaymentStatuses(getDefaultDepositSchedule().map(() => false));
       setConfirmationName("");
       setConfirmationSignature("");
       setConfirmationSignatureImage("");
@@ -953,10 +1244,11 @@ export default function LedgerQuotationDemo() {
         setDepositPaymentStatuses([false]);
         addMsg("Deposit turned off. Payment is set to one-time cash in full.", "bot");
       } else if (depositValue === "on") {
+        const schedule = getDefaultDepositSchedule();
         setDepositEnabled(true);
-        setDepositSchedule(DEPOSIT_SCHEDULES[2]);
-        setDepositPaymentStatuses([false, false]);
-        addMsg("Deposit turned on with the default 30% and 70% schedule.", "bot");
+        setDepositSchedule(schedule);
+        setDepositPaymentStatuses(schedule.map(() => false));
+        addMsg(`Deposit turned on with the default ${schedule.join("% / ")}% schedule.`, "bot");
       } else if (Number.isFinite(rate) && rate >= 0 && rate <= 100) {
         setDepositEnabled(true);
         setDepositSchedule([rate, 100 - rate]);
@@ -973,9 +1265,9 @@ export default function LedgerQuotationDemo() {
       setItems([]);
       setNote("");
       setDepositEnabled(true);
-      setDepositComment("");
-      setDepositSchedule(DEPOSIT_SCHEDULES[2]);
-      setDepositPaymentStatuses([false, false]);
+      setDepositComment(DEFAULT_PAYMENT_COMMENT);
+      setDepositSchedule(getDefaultDepositSchedule());
+      setDepositPaymentStatuses(getDefaultDepositSchedule().map(() => false));
       setConfirmationName("");
       setConfirmationSignature("");
       setConfirmationSignatureImage("");
@@ -1026,13 +1318,14 @@ export default function LedgerQuotationDemo() {
   function removeItem(idx) {
     const removed = items[idx];
     setItems((prev) => prev.filter((_, i) => i !== idx));
-    addMsg(`Removed "${removed.name}" from the quote.`, "bot");
+    addMsg(`Removed "${itemShortLabel(removed)}" from the quote.`, "bot");
   }
 
   function chooseDepositCollections(collections) {
+    const schedule = [...DEPOSIT_SCHEDULES[collections]];
     setDepositEnabled(true);
-    setDepositSchedule([...DEPOSIT_SCHEDULES[collections]]);
-    setDepositPaymentStatuses(DEPOSIT_SCHEDULES[collections].map(() => false));
+    setDepositSchedule(schedule);
+    setDepositPaymentStatuses(schedule.map(() => false));
   }
 
   function updateDepositInstallment(index, value) {
@@ -1080,7 +1373,12 @@ export default function LedgerQuotationDemo() {
     });
     if (saved.ok) {
       setLastSaved({ id: saved.id, type: "Quotation" });
-      addMsg(`Saved quotation ${quoteNo} to the database as record #${saved.id}.`, "bot");
+      addMsg(
+        saved.updated
+          ? `Updated quotation ${quoteNo} in Previous Quotations. No duplicate was created.`
+          : `Saved quotation ${quoteNo} to the database as record #${saved.id}.`,
+        "bot"
+      );
     } else {
       addMsg(`PDF will open, but the database save failed: ${saved.error}`, "bot");
     }
@@ -1212,9 +1510,9 @@ export default function LedgerQuotationDemo() {
 
         <div className="suggestions ledger-mono">
           {SUGGESTIONS.map((s) => (
-            <div key={s} className="chip" onClick={() => handleCommand(s)}>
+            <button type="button" key={s} className="chip" onClick={() => handleCommand(s)}>
               {s}
-            </div>
+            </button>
           ))}
         </div>
 
@@ -1263,7 +1561,7 @@ export default function LedgerQuotationDemo() {
           </button>
         </div>
 
-        <div className="quote-sheet" style={{ position: "relative", display: activePage === "quotation" ? "block" : "none" }}>
+        <div className={`quote-sheet ${items.some(isPackageItem) ? "package-quote" : ""} ${items.some((item) => packageDefinition(item)?.buttonLabel === "PACKAGE A") ? "package-a-quote" : ""}`} style={{ position: "relative", display: activePage === "quotation" ? "block" : "none" }}>
 
           <div className="quote-head">
             <div>
@@ -1308,7 +1606,23 @@ export default function LedgerQuotationDemo() {
                   <td colSpan={5}>No line items yet — add one from the chat</td>
                 </tr>
               ) : (
-                items.map((it, i) => (
+                items.map((it, i) => isPackageItem(it) ? (
+                  <tr className={`package-item-row ${packageDefinition(it)?.buttonLabel === "PACKAGE A" ? "package-a-item" : "package-b-item"}`} key={i}>
+                    <td className="package-item-cell" colSpan={5}>
+                      <div className="package-item-heading">
+                        <div>
+                          <strong>{itemShortLabel(it)} · {packageDefinition(it)?.buttonLabel === "PACKAGE B" ? "Interior Design + Interior Electrical Package" : "Interior Design Package"}</strong>
+                          <small>ค่าบริการออกแบบ · Qty {it.qty}</small>
+                        </div>
+                        <div className="package-item-actions">
+                          <span className="package-item-price">{money(it.qty * it.price, template.currency)}</span>
+                          <span className="remove-x" onClick={() => removeItem(i)}>remove</span>
+                        </div>
+                      </div>
+                      <div className="package-scope">{packageDetails(it.name)}</div>
+                    </td>
+                  </tr>
+                ) : (
                   <tr key={i}>
                     <td style={{ fontFamily: "'Inter', sans-serif", fontSize: 13 }}>{it.name}</td>
                     <td className="num">{it.qty}</td>
@@ -1343,7 +1657,7 @@ export default function LedgerQuotationDemo() {
           <div className="deposit-note ledger-mono">
             <div className="deposit-title">Payment terms</div>
             <div className="deposit-mode" aria-label="Turn deposit on or off">
-              <button type="button" className={`deposit-option ${depositEnabled ? "active" : ""}`} aria-pressed={depositEnabled} onClick={() => { setDepositEnabled(true); setDepositSchedule(DEPOSIT_SCHEDULES[2]); setDepositPaymentStatuses([false, false]); }}>
+              <button type="button" className={`deposit-option ${depositEnabled ? "active" : ""}`} aria-pressed={depositEnabled} onClick={() => { const schedule = getDefaultDepositSchedule(); setDepositEnabled(true); setDepositSchedule(schedule); setDepositPaymentStatuses(schedule.map(() => false)); }}>
                 Deposit on
               </button>
               <button type="button" className={`deposit-option ${!depositEnabled ? "active" : ""}`} aria-pressed={!depositEnabled} onClick={() => { setDepositEnabled(false); setDepositPaymentStatuses([false]); }}>
@@ -1361,7 +1675,9 @@ export default function LedgerQuotationDemo() {
               <div className="deposit-schedule">
                 {depositSchedule.map((rate, index) => (
                   <div className="deposit-installment" key={index}>
-                    <label htmlFor={`deposit-installment-${index}`}>{index + 1}{index === 0 ? "st" : index === 1 ? "nd" : "rd"} collection</label>
+                    <label htmlFor={`deposit-installment-${index}`}>
+                      {depositSchedule.length === 3 ? `งวดที่ ${index + 1} · ${DEFAULT_DEPOSIT_TERMS[index]}` : `${index + 1}${index === 0 ? "st" : "nd"} collection`}
+                    </label>
                     <input id={`deposit-installment-${index}`} type="number" min="0" max="100" step="1" value={rate} aria-label={`Collection ${index + 1} percentage`} onChange={(e) => updateDepositInstallment(index, e.target.value)} />
                     <strong>{rate}% · {money(total * rate / 100, template.currency)}</strong>
                   </div>
