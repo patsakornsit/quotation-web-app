@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const crypto = require('crypto');
 require('dotenv').config();
 const configuredSqlAuthentication = String(process.env.SQL_AUTHENTICATION || 'sql').toLowerCase();
 const useWindowsAuthentication = configuredSqlAuthentication === 'windows' && process.platform === 'win32';
@@ -11,9 +12,61 @@ const sql = useWindowsAuthentication ? require('mssql/msnodesqlv8') : require('m
 
 const app = express();
 const port = process.env.PORT || 3001;
+const adminUsername = String(process.env.ADMIN_USERNAME || '').trim();
+const adminPassword = String(process.env.ADMIN_PASSWORD || '');
+const authTokenTtlSeconds = Math.max(900, Number(process.env.AUTH_TOKEN_TTL_SECONDS) || 43200);
+const authSigningKey = crypto.createHash('sha256')
+  .update(adminUsername)
+  .update('\0')
+  .update(adminPassword)
+  .update('\0quotation-admin-session')
+  .digest();
 
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
+
+function authIsConfigured() {
+  return Boolean(adminUsername && adminPassword);
+}
+
+function safeEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left));
+  const rightBuffer = Buffer.from(String(right));
+  return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function signTokenPart(value) {
+  return crypto.createHmac('sha256', authSigningKey).update(value).digest('base64url');
+}
+
+function createAdminToken() {
+  const payload = Buffer.from(JSON.stringify({
+    sub: adminUsername,
+    exp: Math.floor(Date.now() / 1000) + authTokenTtlSeconds,
+  })).toString('base64url');
+  return `${payload}.${signTokenPart(payload)}`;
+}
+
+function verifyAdminToken(token) {
+  if (!authIsConfigured() || typeof token !== 'string') return false;
+  const [payload, signature, extra] = token.split('.');
+  if (!payload || !signature || extra || !safeEqual(signature, signTokenPart(payload))) return false;
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    return parsed.sub === adminUsername && Number(parsed.exp) > Math.floor(Date.now() / 1000);
+  } catch {
+    return false;
+  }
+}
+
+function authenticateAdmin(req, res, next) {
+  const authorization = String(req.headers.authorization || '');
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+  if (!verifyAdminToken(token)) {
+    return res.status(401).json({ ok: false, error: 'Admin login required.' });
+  }
+  return next();
+}
 
 const sqlServer = process.env.SQL_SERVER || 'localhost';
 const sqlInstance = process.env.SQL_INSTANCE || '';
@@ -161,7 +214,26 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-app.use('/api/quotations', async (req, res, next) => {
+app.post('/api/auth/login', (req, res) => {
+  if (!authIsConfigured()) {
+    return res.status(503).json({
+      ok: false,
+      error: 'Admin login is not configured. Set ADMIN_USERNAME and ADMIN_PASSWORD.',
+    });
+  }
+  const username = String(req.body?.username || '').trim();
+  const password = String(req.body?.password || '');
+  if (!safeEqual(username, adminUsername) || !safeEqual(password, adminPassword)) {
+    return res.status(401).json({ ok: false, error: 'Incorrect username or password.' });
+  }
+  return res.json({ ok: true, token: createAdminToken(), expiresIn: authTokenTtlSeconds, username: adminUsername });
+});
+
+app.get('/api/auth/verify', authenticateAdmin, (req, res) => {
+  return res.json({ ok: true, username: adminUsername });
+});
+
+app.use('/api/quotations', authenticateAdmin, async (req, res, next) => {
   try {
     await ensureDatabase();
     return next();
@@ -381,7 +453,7 @@ app.patch('/api/quotations/:id', async (req, res) => {
     if (!existing) return res.status(404).json({ ok: false, error: 'Record not found' });
     const nextStatus = req.body.status == null ? existing.status : String(req.body.status);
     const nextPaymentStatuses = Array.isArray(req.body.depositPaymentStatuses)
-      ? req.body.depositPaymentStatuses.slice(0, 3).map(Boolean)
+      ? req.body.depositPaymentStatuses.slice(0, 10).map(Boolean)
       : parseJson(existing.depositPaymentStatusesJson, []);
     const updateRequest = dbPool.request();
     updateRequest.input('id', sql.Int, id);
@@ -426,12 +498,12 @@ function parseAssistantJson(content) {
 const allowedQuotationActions = new Set([
   'new_quotation', 'set_client', 'set_quote_number', 'add_item', 'update_item', 'remove_item',
   'clear_items', 'set_note', 'set_payment_comment', 'set_deposit', 'set_deposit_paid',
-  'set_status', 'set_tax_rate', 'set_currency', 'set_confirmation_name', 'set_signature_text',
+  'set_status', 'set_tax_rate', 'set_tax_enabled', 'set_currency', 'set_confirmation_name', 'set_signature_text',
   'remove_signature_image', 'set_template_field', 'reset_template', 'open_summary', 'open_history',
   'open_template_editor', 'load_quotation', 'create_receipt', 'export_pdf',
 ]);
 
-app.post('/api/quotation-assistant', async (req, res) => {
+app.post('/api/quotation-assistant', authenticateAdmin, async (req, res) => {
   if (!DEEPSEEK_CHAT_URL || !DEEPSEEK_API_KEY) {
     return res.status(503).json({ ok: false, error: 'Configure DEEPSEEK_CHAT_URL and DEEPSEEK_API_KEY in device-bridge/.env.' });
   }
@@ -458,6 +530,7 @@ Allowed actions:
 {"type":"set_deposit_paid","index":1,"paid":true}
 {"type":"set_status","value":"Draft|Sent|Accepted|Rejected|Receipt created|Paid"}
 {"type":"set_tax_rate","value":7}
+{"type":"set_tax_enabled","enabled":true}
 {"type":"set_currency","value":"$"}
 {"type":"set_confirmation_name","value":"name"}
 {"type":"set_signature_text","value":"typed signature"}
@@ -473,6 +546,8 @@ Allowed actions:
 The words "collection", "collections", "payment term", "installment", and "deposit" refer to payment terms unless the user explicitly says they are a billable line item.
 "Use 3 collections", "change deposit to 3 collections", or similar MUST produce {"type":"set_deposit","enabled":true,"schedule":[55,25,20]} and MUST NOT add or update an item.
 "Use 2 collections" MUST produce {"type":"set_deposit","enabled":true,"schedule":[30,70]} and MUST NOT add or update an item.
+For 1 to 10 collections, produce a schedule with exactly that many percentages totaling 100. Use whole percentages and put any rounding remainder in the final collection.
+"Show tax", "include tax", or similar MUST produce {"type":"set_tax_enabled","enabled":true}. "Hide tax", "no tax", or similar MUST produce {"type":"set_tax_enabled","enabled":false}.
 "Comment" or "payment comment" means the Payment comment beside the deposit controls and MUST use set_payment_comment. "Quotation note" or "general note" MUST use set_note.
 Changing a payment comment MUST NOT change deposit enabled state or the deposit schedule.
 Use an empty string to clear a note, payment comment, signature, or other text field when the user asks to remove or clear it.
@@ -561,8 +636,8 @@ async function handleDeviceRequest(req, res) {
   }
 }
 
-app.post('/api/device', handleDeviceRequest);
-app.post('/api/openclaw', handleDeviceRequest);
+app.post('/api/device', authenticateAdmin, handleDeviceRequest);
+app.post('/api/openclaw', authenticateAdmin, handleDeviceRequest);
 
 module.exports = app;
 

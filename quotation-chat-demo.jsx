@@ -5,110 +5,151 @@ html, body, #root {
   min-height: 100vh;
   height: 100%;
   margin: 0;
-  background: #101A24;
+  background: #eef3f7;
 }
 body {
-  background: #101A24;
+  background: #eef3f7;
 }
+.admin-login-shell {
+  min-height: 100vh; display: grid; place-items: center; padding: 24px; box-sizing: border-box;
+  background: linear-gradient(145deg, #2a9fc9 0%, #126f96 55%, #0d4f6c 100%);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+.admin-login-card {
+  width: min(420px, 100%); box-sizing: border-box; padding: 34px;
+  border: 1px solid rgba(255,255,255,.55); border-radius: 24px; background: rgba(255,255,255,.96);
+  box-shadow: 0 24px 70px rgba(6,43,59,.28);
+}
+.admin-login-mark {
+  display: inline-grid; place-items: center; width: 46px; height: 46px; margin-bottom: 18px;
+  border-radius: 15px; background: #269BC8; color: white; font: 700 19px 'Zilla Slab', Georgia, serif;
+}
+.admin-login-card h1 { margin: 0; color: #16384a; font: 700 30px 'Zilla Slab', Georgia, serif; }
+.admin-login-card p { margin: 7px 0 24px; color: #647783; font-size: 13px; line-height: 1.5; }
+.admin-login-field { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.admin-login-field label { color: #526b78; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.admin-login-field input {
+  width: 100%; box-sizing: border-box; border: 1px solid #cddde5; border-radius: 12px;
+  padding: 12px 13px; background: white; color: #16384a; font-size: 14px; outline: none;
+}
+.admin-login-field input:focus { border-color: #269BC8; box-shadow: 0 0 0 3px rgba(38,155,200,.14); }
+.admin-login-error { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: #fbe9e6; color: #963c32; font-size: 12px; }
+.admin-login-submit {
+  width: 100%; margin-top: 20px; border: 0; border-radius: 12px; padding: 12px;
+  background: #269BC8; color: white; cursor: pointer; font-size: 13px; font-weight: 700;
+}
+.admin-login-submit:hover { background: #167ea8; }
+.admin-login-submit:disabled { opacity: .58; cursor: wait; }
+.admin-login-checking { color: white; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
 .ledger-app {
-  --paper: #EDE6D3;
-  --paper-line: #B9C6AE;
+  --paper: #FFFFFF;
   --ink: #1E2A38;
   --ink-soft: #45566a;
   --accent-red: #A63A2E;
-  --accent-gold: #B8862F;
-  --panel-dark: #101A24;
-  --panel-dark-2: #182531;
-  --panel-dark-3: #223447;
-  --bubble-user: #2B4258;
-  --bubble-bot: #1A2733;
+  --accent-gold: #269BC8;
+  --panel-dark: #126f96;
+  --panel-dark-2: #1786b1;
+  --panel-dark-3: #2a9fc9;
+  --bubble-user: #ffffff;
+  --bubble-bot: rgba(255,255,255,.14);
   font-family: 'Inter', system-ui, sans-serif;
   color: var(--ink);
   display: grid;
   grid-template-columns: minmax(300px, 1fr) minmax(340px, 1.15fr);
   min-height: 100vh;
-  background: var(--panel-dark);
-  border-radius: 8px;
+  background: #eef3f7;
   overflow: hidden;
 }
 .ledger-serif { font-family: 'Zilla Slab', Georgia, serif; }
 .ledger-mono { font-family: 'IBM Plex Mono', 'Courier New', monospace; }
 
 .chat-side {
-  background: radial-gradient(ellipse at top left, var(--panel-dark-3) 0%, var(--panel-dark) 55%);
+  background: linear-gradient(160deg, var(--panel-dark-3) 0%, var(--panel-dark) 62%, #125f82 100%);
   display: flex;
   flex-direction: column;
   min-width: 0;
-  border-right: 1px solid #05090d;
+  border-right: 0;
+  box-shadow: 8px 0 30px rgba(16, 46, 63, .16);
+  z-index: 2;
 }
 .chat-header {
   padding: 18px 22px 14px;
-  border-bottom: 1px solid #04080c;
+  border-bottom: 1px solid rgba(255,255,255,.16);
   display: flex;
   align-items: baseline;
   gap: 10px;
 }
-.chat-header .brand { font-weight: 700; font-size: 20px; color: var(--paper); }
-.chat-header .brand-mark { color: var(--accent-gold); }
+.chat-header .brand { font-weight: 800; font-size: 20px; color: white; }
+.chat-header .brand-mark { color: #dff5fc; }
 .chat-header .tag {
-  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #6f8296;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,.68);
 }
 .chat-log {
   flex: 1; overflow-y: auto; padding: 18px 22px;
   display: flex; flex-direction: column; gap: 12px;
 }
 .msg {
-  max-width: 86%; padding: 10px 13px; border-radius: 3px;
+  max-width: 86%; padding: 11px 14px; border-radius: 16px;
   font-size: 14px; line-height: 1.5; animation: rise 0.25s ease both;
   white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
 }
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-.msg.bot { align-self: flex-start; background: var(--bubble-bot); color: #cfd9e2; border-left: 2px solid var(--accent-gold); }
-.msg.user { align-self: flex-end; background: var(--bubble-user); color: var(--paper); border-right: 2px solid var(--accent-red); }
+.msg.bot { align-self: flex-start; background: var(--bubble-bot); color: white; border: 1px solid rgba(255,255,255,.12); border-bottom-left-radius: 4px; }
+.msg.user { align-self: flex-end; background: var(--bubble-user); color: #15384a; border-bottom-right-radius: 4px; box-shadow: 0 5px 16px rgba(7,52,72,.16); }
 .msg .who { display: block; font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; opacity: 0.55; margin-bottom: 3px; }
 .msg code { background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 2px; font-size: 0.92em; }
 
 .suggestions { padding: 0 22px 10px; display: flex; flex-wrap: wrap; gap: 7px; }
 .chip {
-  font-size: 11px; color: #a9bacb; background: var(--panel-dark-3);
-  border: 1px solid #2c4155; padding: 5px 10px; border-radius: 20px; cursor: pointer;
+  font-size: 11px; color: white; background: rgba(255,255,255,.11);
+  border: 1px solid rgba(255,255,255,.28); padding: 6px 11px; border-radius: 20px; cursor: pointer;
 }
-.chip:hover { background: var(--accent-gold); color: #1a1305; border-color: var(--accent-gold); }
+.chip:hover { background: white; color: #176f94; border-color: white; }
 
-.chat-input-row { display: flex; gap: 8px; padding: 14px 22px 18px; border-top: 1px solid #04080c; }
+.chat-input-row { display: flex; gap: 8px; padding: 14px 22px 18px; border-top: 1px solid rgba(255,255,255,.16); }
 .chat-input-row textarea {
-  flex: 1; background: var(--panel-dark-2); border: 1px solid #2c4155; color: var(--paper);
-  padding: 10px 12px; border-radius: 4px; font: 13.5px 'Inter', sans-serif; line-height: 1.4;
+  flex: 1; background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.28); color: white;
+  padding: 10px 12px; border-radius: 14px; font: 13.5px 'Inter', sans-serif; line-height: 1.4;
   outline: none; resize: vertical; min-height: 42px; max-height: 120px; box-sizing: border-box;
   overflow-wrap: anywhere; word-break: break-word;
 }
-.chat-input-row textarea:focus { border-color: var(--accent-gold); }
-.chat-input-row textarea::placeholder { color: #5c7086; }
+.chat-input-row textarea:focus { border-color: white; background: rgba(255,255,255,.18); }
+.chat-input-row textarea::placeholder { color: rgba(255,255,255,.58); }
 .send-btn {
-  background: var(--accent-gold); color: #1a1305; border: none; border-radius: 4px;
+  background: white; color: #176f94; border: none; border-radius: 14px;
   padding: 0 18px; font-weight: 600; font-size: 12px; letter-spacing: 0.05em;
   text-transform: uppercase; cursor: pointer;
 }
 
 .paper-side {
-  background: var(--paper); overflow-y: auto; padding: 30px 34px 46px; position: relative;
-  background-image: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--paper-line) 28px);
-  background-position: 0 108px;
+  background: #eef3f7; overflow-y: auto; padding: 24px 28px 46px; position: relative;
 }
-.paper-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 18px; }
+.paper-toolbar {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 18px;
+  position: sticky; top: 0; z-index: 12; padding: 10px;
+  background: rgba(255,255,255,.94); backdrop-filter: blur(12px);
+  border: 1px solid #dce6ec; border-radius: 18px; box-shadow: 0 8px 24px rgba(33,71,91,.09);
+}
 .paper-toolbar .label { margin-right: auto; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
-.page-tabs { display: flex; border: 1px solid var(--ink); border-radius: 3px; overflow: hidden; }
-.page-tab { border: 0; background: transparent; color: var(--ink); padding: 7px 10px; cursor: pointer; font: 10px 'IBM Plex Mono', monospace; }
-.page-tab.active { background: var(--ink); color: var(--paper); }
+.page-tabs { display: flex; padding: 3px; background: #e8f4f8; border-radius: 13px; overflow: hidden; }
+.page-tab { border: 0; border-radius: 10px; background: transparent; color: #39758f; padding: 8px 12px; cursor: pointer; font: 10px 'IBM Plex Mono', monospace; }
+.page-tab.active { background: var(--accent-gold); color: white; box-shadow: 0 4px 10px rgba(38,155,200,.24); }
 .pdf-btn {
-  background: var(--ink); color: var(--paper); border: none; padding: 8px 14px; border-radius: 3px;
+  background: var(--accent-gold); color: white; border: none; padding: 9px 14px; border-radius: 12px;
   font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
 }
-.pdf-btn:hover { background: var(--accent-red); }
+.pdf-btn:hover { background: #167ea8; }
 .toolbar-actions { display: flex; gap: 8px; }
-.design-btn { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
-.design-btn:hover { background: var(--ink); color: var(--paper); }
-.history-btn { background: var(--accent-gold); color: #1a1305; }
+.design-btn { background: #edf3f6; color: var(--ink); border: 0; }
+.design-btn:hover { background: #dceaf0; color: var(--ink); }
+.history-btn { background: #e5f5fb; color: #157ea8; }
+.history-btn:hover { background: #167ea8; color: white; }
+.logout-btn { background: #fff0ed; color: #9a4036; }
+.logout-btn:hover { background: #a63a2e; color: white; }
+.quote-sheet, .summary-page {
+  background: var(--paper); border: 1px solid #dce6ec; border-radius: 22px;
+  padding: 28px; box-shadow: 0 14px 38px rgba(33,71,91,.10);
+}
 
 .history-modal {
   position: fixed; inset: 0; z-index: 25; background: rgba(5,9,13,.75); padding: 24px;
@@ -116,26 +157,26 @@ body {
 }
 .history-panel {
   width: min(720px, 100%); max-height: min(760px, 90vh); overflow-y: auto;
-  background: #f7f3e8; color: #1E2A38; border-radius: 6px; padding: 24px;
+  background: #f8fbfc; color: #1E2A38; border-radius: 22px; padding: 24px;
   box-shadow: 0 20px 60px rgba(0,0,0,.35);
 }
 .history-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
 .history-head h2 { margin: 0; font-size: 25px; }
 .history-head p { margin: 4px 0 0; color: #66717c; font-size: 12px; }
-.history-search { width: 100%; box-sizing: border-box; border: 1px solid #c6bdab; border-radius: 4px; padding: 10px 12px; margin-bottom: 14px; font-size: 13px; }
+.history-search { width: 100%; box-sizing: border-box; border: 1px solid #d5e2e8; border-radius: 12px; padding: 11px 13px; margin-bottom: 14px; font-size: 13px; }
 .history-list { display: flex; flex-direction: column; gap: 9px; }
 .history-row {
   display: grid; grid-template-columns: 1fr 1.3fr .8fr .8fr auto; gap: 12px; align-items: center;
-  padding: 12px; border: 1px solid #d2cab8; background: #fffdf7; border-radius: 4px;
+  padding: 14px; border: 1px solid #dce6ec; background: white; border-radius: 15px;
 }
 .history-row small { display: block; color: #74808a; font-size: 9px; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .07em; }
 .history-row strong { font-size: 12px; }
 .history-row em { display: block; color: #74808a; font-size: 9px; font-style: normal; margin-top: 3px; }
 .history-status { display: inline-block; border: 1px solid #b8ad98; border-radius: 20px; padding: 3px 7px; font-size: 9px; }
-.history-load { border: 0; border-radius: 3px; background: #1E2A38; color: white; padding: 7px 11px; cursor: pointer; }
+.history-load { border: 0; border-radius: 10px; background: var(--accent-gold); color: white; padding: 8px 12px; cursor: pointer; }
 .history-load:disabled { opacity: .5; cursor: wait; }
 .record-actions { display: flex; gap: 6px; justify-content: flex-end; }
-.history-delete { border: 1px solid #A63A2E; border-radius: 3px; background: transparent; color: #A63A2E; padding: 7px 9px; cursor: pointer; }
+.history-delete { border: 1px solid #A63A2E; border-radius: 10px; background: transparent; color: #A63A2E; padding: 7px 9px; cursor: pointer; }
 .history-delete:hover { background: #A63A2E; color: white; }
 .history-delete:disabled { opacity: .5; cursor: wait; }
 .history-empty { padding: 34px; text-align: center; border: 1px dashed #c6bdab; color: #66717c; }
@@ -146,7 +187,7 @@ body {
   display: flex; justify-content: flex-end; align-items: stretch;
 }
 .template-panel {
-  width: min(420px, 100%); background: #f7f3e8; color: #1E2A38; border-radius: 6px;
+  width: min(420px, 100%); background: #f8fbfc; color: #1E2A38; border-radius: 22px;
   padding: 24px; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.35);
 }
 .template-panel-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
@@ -157,19 +198,30 @@ body {
 .template-field { display: flex; flex-direction: column; gap: 5px; }
 .template-field.wide { grid-column: 1 / -1; }
 .template-field label { font: 10px 'IBM Plex Mono', monospace; letter-spacing: .1em; text-transform: uppercase; color: #66717c; }
-.template-field input { box-sizing: border-box; width: 100%; border: 1px solid #c6bdab; border-radius: 4px; background: white; padding: 9px 10px; color: #1E2A38; font-size: 13px; }
+.template-field input { box-sizing: border-box; width: 100%; border: 1px solid #d5e2e8; border-radius: 11px; background: white; padding: 10px 11px; color: #1E2A38; font-size: 13px; }
 .template-field input[type='color'] { padding: 3px; height: 38px; cursor: pointer; }
 .template-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 22px; }
-.template-actions button { border: 0; border-radius: 4px; padding: 9px 14px; cursor: pointer; font-weight: 600; }
+.template-actions button { border: 0; border-radius: 11px; padding: 10px 15px; cursor: pointer; font-weight: 600; }
 .reset-btn { background: #ded7c7; color: #1E2A38; }
-.done-btn { background: #1E2A38; color: #EDE6D3; }
+.done-btn { background: var(--accent-gold); color: white; }
 
+.quote-print-frame,
+.quote-print-frame > thead,
+.quote-print-frame > tbody,
+.quote-print-frame > thead > tr,
+.quote-print-frame > tbody > tr,
+.quote-print-frame > thead > tr > td,
+.quote-print-frame > tbody > tr > td { display: block; width: 100%; box-sizing: border-box; }
+.quote-print-frame { border-collapse: collapse; }
+.quote-print-frame > thead > tr > td,
+.quote-print-frame > tbody > tr > td { padding: 0; }
 .quote-head { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 14px; margin-bottom: 4px; }
 .quote-head h1 { font-size: 30px; margin: 0; font-weight: 700; }
 .quote-head .sub { font-size: 10.5px; color: var(--ink-soft); margin-top: 4px; }
 .quote-meta { text-align: right; font-size: 11.5px; color: var(--ink-soft); line-height: 1.7; }
 .quote-meta strong { color: var(--ink); }
 .quote-number-input { width: 92px; border: 0; border-bottom: 1px solid var(--ink-soft); background: transparent; color: var(--ink); text-align: right; font: 600 11.5px 'IBM Plex Mono', monospace; }
+.quote-number-print { display: none; }
 
 .quote-parties { display: flex; justify-content: space-between; margin: 18px 0 6px; gap: 18px; }
 .party { flex: 1; }
@@ -201,29 +253,62 @@ table.items tbody td:first-child {
 .package-item-actions .remove-x { font-size: 12px; }
 .package-scope {
   columns: 2 220px; column-gap: 20px; column-rule: 1px solid rgba(69,86,106,.2);
-  white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.45 'Inter', sans-serif;
+  overflow-wrap: anywhere; font: 12px/1.45 'Inter', sans-serif;
 }
+.package-section {
+  white-space: pre-wrap; break-inside: avoid; page-break-inside: avoid;
+  margin: 0 0 1.15em;
+}
+.package-section:last-child { margin-bottom: 0; }
 .package-a-item .package-scope { font-size: 14px; line-height: 1.55; }
 .empty-row td { padding: 22px 0; text-align: center; color: #a49c86; font-style: italic; font-family: 'Inter', sans-serif; font-size: 12.5px; }
 .remove-x { color: var(--accent-red); cursor: pointer; font-size: 11px; opacity: 0.55; padding-left: 8px; }
 .remove-x:hover { opacity: 1; }
 
-.totals { margin-top: 4px; margin-left: auto; width: 220px; font-size: 12.5px; }
+.totals {
+  margin-top: 18px; margin-left: auto; width: min(280px, 100%); box-sizing: border-box;
+  padding: 14px 16px; font-size: 12.5px; background: #f7fbfd;
+  border: 1px solid #dce8ed; border-radius: 15px;
+}
 .totals .row { display: flex; justify-content: space-between; padding: 6px 0; color: var(--ink-soft); }
 .totals .row.grand { border-top: 2px solid var(--ink); margin-top: 4px; padding-top: 9px; font-size: 15px; color: var(--ink); font-weight: 600; }
+.tax-control { align-items: center; gap: 12px; }
+.tax-switch { position: relative; display: inline-flex; width: 38px; height: 21px; flex: 0 0 auto; }
+.tax-switch input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.tax-slider {
+  position: absolute; inset: 0; border: 1px solid #a9a18e; border-radius: 999px;
+  background: #c9c0a8; cursor: pointer; transition: .18s ease;
+}
+.tax-slider::after {
+  content: ""; position: absolute; width: 15px; height: 15px; left: 2px; top: 2px;
+  border-radius: 50%; background: var(--paper); box-shadow: 0 1px 2px rgba(0,0,0,.24);
+  transition: transform .18s ease;
+}
+.tax-switch input:checked + .tax-slider { background: var(--ink); border-color: var(--ink); }
+.tax-switch input:checked + .tax-slider::after { transform: translateX(17px); }
+.tax-switch input:focus-visible + .tax-slider { outline: 2px solid var(--accent-gold); outline-offset: 2px; }
 
 .deposit-note {
-  width: min(310px, 100%); margin-top: 24px; padding: 13px 14px; box-sizing: border-box;
-  border-left: 3px solid var(--accent-gold); background: rgba(255,255,255,0.28);
+  width: 100%; margin-top: 20px; padding: 16px; box-sizing: border-box;
+  border: 1px solid #dce8ed; border-radius: 16px; background: #f8fbfc;
 }
 .deposit-title { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
 .deposit-mode { display: flex; gap: 6px; margin-top: 9px; }
 .deposit-options { display: flex; flex-wrap: wrap; gap: 6px; margin: 9px 0 11px; }
-.deposit-option {
-  border: 1px solid #a9a18e; background: transparent; color: var(--ink); border-radius: 3px;
-  padding: 5px 8px; font: 10px 'IBM Plex Mono', monospace; cursor: pointer;
+.deposit-count {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 9px 0 11px; color: var(--ink-soft); font-size: 10.5px;
 }
-.deposit-option.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.deposit-count input {
+  width: 64px; box-sizing: border-box; border: 1px solid #a9a18e; border-radius: 3px;
+  background: var(--paper); color: var(--ink); padding: 6px; text-align: center;
+  font: 11px 'IBM Plex Mono', monospace;
+}
+.deposit-option {
+  border: 1px solid #cbdde5; background: white; color: var(--ink); border-radius: 10px;
+  padding: 6px 9px; font: 10px 'IBM Plex Mono', monospace; cursor: pointer;
+}
+.deposit-option.active { background: var(--accent-gold); border-color: var(--accent-gold); color: white; }
 .deposit-schedule { display: flex; flex-direction: column; gap: 7px; }
 .deposit-installment { display: grid; grid-template-columns: 1fr 58px auto; gap: 8px; align-items: center; font-size: 11px; }
 .deposit-installment label { color: var(--ink-soft); }
@@ -247,16 +332,16 @@ table.items tbody td:first-child {
 .cash-payment { margin-top: 10px; padding: 9px 0; border-top: 1px solid #c9c0a8; border-bottom: 1px solid #c9c0a8; display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
 
 .quote-summary {
-  margin-top: 26px; border: 1px solid #c9c0a8; background: rgba(255,255,255,0.32);
-  padding: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: end;
+  margin-top: 20px; border: 1px solid #dce8ed; border-radius: 16px; background: #f8fbfc;
+  padding: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: end;
 }
 .summary-heading { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; }
 .summary-heading strong { font-size: 14px; }
 .summary-heading span { font-size: 9px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .1em; }
 .summary-cell label { display: block; font-size: 8px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 3px; }
 .summary-cell strong { font-size: 12px; }
-.status-select { width: 100%; border: 1px solid #a9a18e; background: var(--paper); color: var(--ink); padding: 7px; border-radius: 3px; }
-.receipt-btn { border: 0; background: var(--accent-red); color: white; padding: 8px 10px; border-radius: 3px; cursor: pointer; }
+.status-select { width: 100%; border: 1px solid #cbdde5; background: white; color: var(--ink); padding: 8px; border-radius: 10px; }
+.receipt-btn { border: 0; background: var(--accent-gold); color: white; padding: 9px 11px; border-radius: 10px; cursor: pointer; }
 .receipt-btn:disabled { opacity: .45; cursor: not-allowed; }
 
 .receipt-modal {
@@ -302,17 +387,17 @@ table.items tbody td:first-child {
 .summary-page-head h1 { margin: 0; font-size: 29px; }
 .summary-page-head p { margin: 4px 0 0; color: var(--ink-soft); font-size: 11px; }
 .summary-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0; }
-.summary-kpi { border: 1px solid #c9c0a8; background: rgba(255,255,255,.28); padding: 14px; }
+.summary-kpi { border: 1px solid #dce8ed; border-radius: 16px; background: #f7fbfd; padding: 16px; }
 .summary-kpi span { display: block; color: var(--ink-soft); font-size: 8px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 5px; }
-.summary-kpi strong { font-size: 15px; }
+.summary-kpi strong { font-size: 19px; color: #188eb9; }
 .summary-section { margin-top: 24px; }
 .summary-section h2 { margin: 0 0 10px; font-size: 18px; }
 .summary-schedule-row { display: flex; justify-content: space-between; border-bottom: 1px solid #c9c0a8; padding: 8px 0; font-size: 11px; }
 .summary-actions { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 28px; }
 .summary-dashboard-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
-.summary-dashboard-head button { border: 0; background: var(--ink); color: var(--paper); border-radius: 3px; padding: 8px 11px; cursor: pointer; }
+.summary-dashboard-head button { border: 0; background: var(--accent-gold); color: white; border-radius: 11px; padding: 9px 12px; cursor: pointer; }
 .summary-records { display: flex; flex-direction: column; gap: 12px; margin-top: 22px; }
-.summary-record { border: 1px solid #c9c0a8; background: rgba(255,255,255,.28); padding: 14px; }
+.summary-record { border: 1px solid #dce8ed; border-radius: 16px; background: #f9fcfd; padding: 16px; }
 .summary-record-main { display: grid; grid-template-columns: .8fr 1.3fr .8fr 1fr auto; gap: 12px; align-items: center; }
 .summary-record-main small { display: block; color: var(--ink-soft); font-size: 8px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
 .summary-record-main strong { font-size: 11px; }
@@ -342,17 +427,18 @@ table.items tbody td:first-child {
   .chip { flex: 0 0 auto; }
   .chat-input-row { padding: 11px 14px 14px; }
   .send-btn { padding: 0 13px; }
-  .paper-side { padding: 18px 12px 36px; overflow: visible; background-position: 0 90px; }
+  .paper-side { padding: 14px 10px 34px; overflow: visible; }
   .history-modal { padding: 10px; }
   .history-panel { padding: 14px; max-height: 94vh; }
   .history-row { grid-template-columns: 1fr 1fr; }
   .record-actions { grid-column: 1 / -1; }
   .record-actions button { flex: 1; }
-  .paper-toolbar { flex-wrap: wrap; align-items: stretch; }
-  .paper-toolbar .label { width: 100%; }
-  .page-tabs { flex: 1 1 auto; }
+  .paper-toolbar { flex-wrap: wrap; align-items: stretch; border-radius: 16px; }
+  .paper-toolbar .label { display: none; }
+  .page-tabs { flex: 1 1 100%; width: 100%; }
   .page-tab { flex: 1; }
-  .pdf-btn { flex: 1 1 auto; padding: 8px 9px; font-size: 9px; }
+  .pdf-btn { flex: 1 1 28%; padding: 9px 7px; font-size: 8px; }
+  .quote-sheet, .summary-page { padding: 18px 14px; border-radius: 18px; }
   .quote-head { gap: 12px; }
   .quote-head h1 { font-size: 25px; }
   .quote-meta { flex: 0 0 auto; font-size: 10px; }
@@ -381,22 +467,22 @@ table.items tbody td:first-child {
 }
 
 @media print {
-  @page { size: Letter portrait; margin: 0; }
+  @page { size: Letter portrait; margin: 12mm 14mm 14mm; }
   html, body, #root {
-    width: 8.5in;
+    width: auto;
     height: auto;
     min-height: 0;
     margin: 0;
     padding: 0;
-    background: var(--paper, #EDE6D3);
+    background: var(--paper, #FFFFFF);
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
   body { overflow: visible; }
   .ledger-app {
     display: block;
-    width: 8.5in;
-    min-height: 11in;
+    width: auto;
+    min-height: 0;
     overflow: visible;
     background: var(--paper);
     -webkit-print-color-adjust: exact;
@@ -405,10 +491,10 @@ table.items tbody td:first-child {
   .chat-side { display: none !important; }
   .paper-side {
     position: static;
-    width: 8.5in;
-    min-height: 11in;
+    width: auto;
+    min-height: 0;
     margin: 0;
-    padding: 12mm 14mm;
+    padding: 0;
     box-sizing: border-box;
     background-color: var(--paper);
     background-image: none;
@@ -418,13 +504,39 @@ table.items tbody td:first-child {
   }
   .paper-toolbar { display: none; }
   .quote-summary { display: none; }
-  .deposit-options, .deposit-mode { display: none; }
+  body.printing-quotation .receipt-modal,
+  body.printing-quotation .summary-page,
+  body.printing-quotation .print-empty { display: none !important; }
+  .quote-sheet {
+    padding: 0; border: 0; border-radius: 0;
+    box-shadow: none; background: var(--paper);
+    break-after: avoid-page; page-break-after: avoid;
+  }
+  .quote-print-frame { break-after: avoid-page; page-break-after: avoid; }
+  .quote-print-frame { display: table; width: 100%; border-collapse: collapse; }
+  .quote-print-frame > thead { display: table-header-group; }
+  .quote-print-frame > tbody { display: table-row-group; }
+  .quote-print-frame > thead > tr,
+  .quote-print-frame > tbody > tr { display: table-row; }
+  .quote-print-frame > thead > tr > td,
+  .quote-print-frame > tbody > tr > td { display: table-cell; width: auto; padding: 0; }
+  .quote-print-head .quote-head {
+    margin: 0 0 5mm;
+    padding: 0 0 3mm;
+    border-bottom: 1px solid #c9c0a8;
+    background: var(--paper);
+  }
+  .quote-parties { margin-top: 0; }
+  .deposit-options, .deposit-mode, .deposit-count, .tax-control { display: none !important; }
   .deposit-note { break-inside: avoid; }
   .deposit-installment { grid-template-columns: 1fr auto; }
   .deposit-installment input { display: none; }
   .deposit-comment textarea { display: none; }
   .deposit-comment-print { display: block; }
   .quote-number-input, .confirmation input { border-bottom-color: transparent; }
+  .quote-number-input { display: none; }
+  .quote-number-print { display: inline; }
+  .package-item-heading { display: none; }
   .package-item-heading { padding-bottom: 4px; margin-bottom: 5px; }
   .package-item-heading strong { font-size: 12.5px; }
   .package-item-heading small { font-size: 8.5px; }
@@ -461,9 +573,9 @@ table.items tbody td:first-child {
   body.printing-receipt .paper-side { display: none !important; }
   body.printing-receipt .receipt-modal {
     position: static;
-    width: 8.5in;
-    min-height: 11in;
-    padding: 12mm 14mm;
+    width: auto;
+    min-height: 0;
+    padding: 0;
     box-sizing: border-box;
     background: white;
     display: block;
@@ -479,9 +591,10 @@ const DEFAULT_TEMPLATE = {
   footer: "Ledger demo · this preview is what gets exported to PDF",
   currency: "$",
   taxRate: 7,
-  paperColor: "#EDE6D3",
+  taxEnabled: true,
+  paperColor: "#FFFFFF",
   inkColor: "#1E2A38",
-  accentColor: "#B8862F",
+  accentColor: "#269BC8",
   stampColor: "#A63A2E",
 };
 
@@ -616,25 +729,34 @@ Interior Design + Interior Electrical Package
 const PACKAGE_ITEMS = [PACKAGE_A_ITEM, PACKAGE_B_ITEM];
 
 function packageDefinition(item) {
-  const name = String(item?.name || "");
-  return PACKAGE_ITEMS.find((packageItem) => name.startsWith(`${packageItem.buttonLabel}\n\n`));
+  const name = String(item?.name || "").trim().toUpperCase();
+  return PACKAGE_ITEMS.find((packageItem) => {
+    const label = packageItem.buttonLabel.toUpperCase();
+    return name === label
+      || name.startsWith(`${label}\n`)
+      || name.startsWith(`${label} ·`)
+      || name.startsWith(`${label} -`);
+  });
 }
 
 function isPackageItem(item) {
   return Boolean(packageDefinition(item));
 }
 
+function restoreOriginalPackageText(item) {
+  const definition = packageDefinition(item);
+  return definition ? { ...item, name: definition.name } : item;
+}
+
 function packageDetails(name) {
-  const fullText = String(name || "");
-  const detailMarkers = [
-    "ขอบเขตการให้บริการ (Scope of Services)",
-    "รวมบริการทั้งหมดใน Package A",
-  ];
-  const detailStart = detailMarkers
-    .map((marker) => fullText.indexOf(marker))
-    .filter((index) => index >= 0)
-    .sort((a, b) => a - b)[0];
-  return Number.isInteger(detailStart) ? fullText.slice(detailStart) : fullText;
+  return String(name || "");
+}
+
+function packageSections(name) {
+  return packageDetails(name)
+    .split(/\n\s*\n/)
+    .map((section) => section.trim())
+    .filter(Boolean);
 }
 
 function itemShortLabel(item) {
@@ -684,13 +806,70 @@ function getDefaultDepositSchedule() {
   return [...DEPOSIT_SCHEDULES[3]];
 }
 
+function createDepositSchedule(collections) {
+  const count = Math.min(10, Math.max(1, Math.floor(Number(collections) || 1)));
+  if (DEPOSIT_SCHEDULES[count]) return [...DEPOSIT_SCHEDULES[count]];
+  const baseRate = Math.floor(100 / count);
+  return Array.from(
+    { length: count },
+    (_, index) => index === count - 1 ? 100 - (baseRate * (count - 1)) : baseRate
+  );
+}
+
 const API_BASE_URL = String(
   import.meta.env.VITE_API_BASE_URL || `${window.location.protocol}//${window.location.hostname}:3001`
 ).replace(/\/$/, "");
 const DEVICE_API_ENDPOINT = `${API_BASE_URL}/api/device`;
 const QUOTATION_API_ENDPOINT = `${API_BASE_URL}/api/quotations`;
 const QUOTATION_ASSISTANT_ENDPOINT = `${API_BASE_URL}/api/quotation-assistant`;
+const AUTH_LOGIN_ENDPOINT = `${API_BASE_URL}/api/auth/login`;
+const AUTH_VERIFY_ENDPOINT = `${API_BASE_URL}/api/auth/verify`;
+const AUTH_TOKEN_KEY = "ledger-admin-token";
 const API_REQUEST_HEADERS = { "ngrok-skip-browser-warning": "1" };
+
+function authenticatedHeaders(extraHeaders = {}) {
+  const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+  return {
+    ...API_REQUEST_HEADERS,
+    ...extraHeaders,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
+async function parseApiResponse(response) {
+  const responseText = await response.text();
+  try {
+    return responseText ? JSON.parse(responseText) : {};
+  } catch {
+    throw new Error(`API returned HTTP ${response.status} instead of JSON.`);
+  }
+}
+
+async function loginAdmin(username, password) {
+  try {
+    const response = await fetch(AUTH_LOGIN_ENDPOINT, {
+      method: "POST",
+      headers: { ...API_REQUEST_HEADERS, "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const result = await parseApiResponse(response);
+    if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    return { ok: true, ...result };
+  } catch (error) {
+    return { ok: false, error: error.message || String(error) };
+  }
+}
+
+async function verifyAdminLogin() {
+  try {
+    const response = await fetch(AUTH_VERIFY_ENDPOINT, { headers: authenticatedHeaders() });
+    const result = await parseApiResponse(response);
+    if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    return { ok: true, ...result };
+  } catch (error) {
+    return { ok: false, error: error.message || String(error) };
+  }
+}
 
 function money(n, currency = "$") {
   return currency + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -724,7 +903,7 @@ async function callDevice(action, params = {}) {
   try {
     const res = await fetch(DEVICE_API_ENDPOINT, {
       method: "POST",
-      headers: { ...API_REQUEST_HEADERS, "Content-Type": "application/json" },
+      headers: authenticatedHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ action, params }),
     });
     if (!res.ok) {
@@ -746,7 +925,7 @@ async function saveQuotationRecord(record) {
   try {
     const response = await fetch(QUOTATION_API_ENDPOINT, {
       method: "POST",
-      headers: { ...API_REQUEST_HEADERS, "Content-Type": "application/json" },
+      headers: authenticatedHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(record),
     });
     const result = await response.json();
@@ -759,7 +938,7 @@ async function saveQuotationRecord(record) {
 
 async function getSavedQuotations() {
   try {
-    const response = await fetch(`${QUOTATION_API_ENDPOINT}?limit=100`, { headers: API_REQUEST_HEADERS });
+    const response = await fetch(`${QUOTATION_API_ENDPOINT}?limit=100`, { headers: authenticatedHeaders() });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
     const seenQuoteNumbers = new Set();
@@ -780,7 +959,7 @@ async function getSavedQuotations() {
 
 async function getSavedQuotation(id) {
   try {
-    const response = await fetch(`${QUOTATION_API_ENDPOINT}/${id}`, { headers: API_REQUEST_HEADERS });
+    const response = await fetch(`${QUOTATION_API_ENDPOINT}/${id}`, { headers: authenticatedHeaders() });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
     return { ok: true, record: result.record };
@@ -791,7 +970,7 @@ async function getSavedQuotation(id) {
 
 async function getNextQuotationNumber() {
   try {
-    const response = await fetch(`${QUOTATION_API_ENDPOINT}/next-number`, { headers: API_REQUEST_HEADERS });
+    const response = await fetch(`${QUOTATION_API_ENDPOINT}/next-number`, { headers: authenticatedHeaders() });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
     return { ok: true, quoteNumber: result.quoteNumber };
@@ -804,7 +983,7 @@ async function updateSavedQuotation(id, changes) {
   try {
     const response = await fetch(`${QUOTATION_API_ENDPOINT}/${id}`, {
       method: "PATCH",
-      headers: { ...API_REQUEST_HEADERS, "Content-Type": "application/json" },
+      headers: authenticatedHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(changes),
     });
     const responseText = await response.text();
@@ -826,7 +1005,7 @@ async function deleteSavedQuotation(id) {
   try {
     const response = await fetch(`${QUOTATION_API_ENDPOINT}/${id}`, {
       method: "DELETE",
-      headers: API_REQUEST_HEADERS,
+      headers: authenticatedHeaders(),
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
@@ -840,7 +1019,7 @@ async function interpretQuotationMessage(message, quotation) {
   try {
     const response = await fetch(QUOTATION_ASSISTANT_ENDPOINT, {
       method: "POST",
-      headers: { ...API_REQUEST_HEADERS, "Content-Type": "application/json" },
+      headers: authenticatedHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ message, quotation }),
     });
     const result = await response.json();
@@ -852,11 +1031,22 @@ async function interpretQuotationMessage(message, quotation) {
 }
 
 export default function LedgerQuotationDemo() {
+  const [authStatus, setAuthStatus] = useState("checking");
+  const [adminUsernameInput, setAdminUsernameInput] = useState("");
+  const [adminPasswordInput, setAdminPasswordInput] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
   const [template, setTemplate] = useState(() => {
     try {
       const savedTemplate = JSON.parse(localStorage.getItem("ledger-quotation-template") || "{}");
       if (savedTemplate.companyName === "Fieldstone Studio") {
         savedTemplate.companyName = DEFAULT_TEMPLATE.companyName;
+      }
+      if (String(savedTemplate.paperColor || "").toUpperCase() === "#EDE6D3") {
+        savedTemplate.paperColor = DEFAULT_TEMPLATE.paperColor;
+      }
+      if (String(savedTemplate.accentColor || "").toUpperCase() === "#B8862F") {
+        savedTemplate.accentColor = DEFAULT_TEMPLATE.accentColor;
       }
       return { ...DEFAULT_TEMPLATE, ...savedTemplate };
     } catch {
@@ -902,11 +1092,31 @@ export default function LedgerQuotationDemo() {
 
   useEffect(() => {
     let active = true;
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) {
+      setAuthStatus("anonymous");
+      return () => { active = false; };
+    }
+    verifyAdminLogin().then((result) => {
+      if (!active) return;
+      if (result.ok) {
+        setAuthStatus("authenticated");
+      } else {
+        sessionStorage.removeItem(AUTH_TOKEN_KEY);
+        setAuthStatus("anonymous");
+      }
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") return undefined;
+    let active = true;
     getNextQuotationNumber().then((result) => {
       if (active && result.ok) setQuoteNo(result.quoteNumber);
     });
     return () => { active = false; };
-  }, []);
+  }, [authStatus]);
 
   function addMsg(text, who) {
     setMessages((m) => [...m, { text, who }]);
@@ -914,6 +1124,28 @@ export default function LedgerQuotationDemo() {
 
   function updateTemplate(field, value) {
     setTemplate((current) => ({ ...current, [field]: value }));
+  }
+
+  async function submitAdminLogin(event) {
+    event.preventDefault();
+    setLoginError("");
+    setLoginLoading(true);
+    const result = await loginAdmin(adminUsernameInput, adminPasswordInput);
+    setLoginLoading(false);
+    if (!result.ok || !result.token) {
+      setLoginError(result.error || "Could not sign in.");
+      return;
+    }
+    sessionStorage.setItem(AUTH_TOKEN_KEY, result.token);
+    setAdminPasswordInput("");
+    setAuthStatus("authenticated");
+  }
+
+  function logoutAdmin() {
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    setAdminPasswordInput("");
+    setLoginError("");
+    setAuthStatus("anonymous");
   }
 
   async function assignNextQuotationNumber() {
@@ -1013,11 +1245,15 @@ export default function LedgerQuotationDemo() {
     const record = result.record;
     setQuoteNo(record.quoteNumber);
     setClient(record.client || "");
-    setItems((record.items || []).map((item) => ({ name: item.name, qty: Number(item.qty), price: Number(item.price) })));
+    setItems((record.items || []).map((item) => restoreOriginalPackageText({
+      name: item.name,
+      qty: Number(item.qty),
+      price: Number(item.price),
+    })));
     setNote(record.note || "");
     setDepositEnabled(record.depositEnabled !== false);
     setDepositComment(record.depositComment || "");
-    const savedSchedule = Array.isArray(record.depositSchedule) && [2, 3].includes(record.depositSchedule.length)
+    const savedSchedule = Array.isArray(record.depositSchedule) && record.depositSchedule.length >= 1 && record.depositSchedule.length <= 10
       ? record.depositSchedule.map((rate) => Math.min(100, Math.max(0, Number(rate) || 0)))
       : [record.depositRate == null ? 30 : Math.min(100, Math.max(0, Number(record.depositRate) || 0)),
           100 - (record.depositRate == null ? 30 : Math.min(100, Math.max(0, Number(record.depositRate) || 0)))];
@@ -1027,7 +1263,15 @@ export default function LedgerQuotationDemo() {
     setConfirmationSignature(record.confirmationSignature || "");
     setConfirmationSignatureImage(record.confirmationSignatureImage || "");
     setStatus(record.status || "Draft");
-    setTemplate((current) => ({ ...current, ...(record.template || {}), currency: record.currency || current.currency, taxRate: record.taxRate ?? current.taxRate }));
+    setTemplate((current) => ({
+      ...current,
+      ...(record.template || {}),
+      currency: record.currency || current.currency,
+      taxRate: record.taxRate ?? current.taxRate,
+      taxEnabled: typeof record.template?.taxEnabled === "boolean"
+        ? record.template.taxEnabled
+        : Number(record.tax) > 0,
+    }));
     setActivePage("quotation");
     setReceipt(null);
     setLastSaved({ id: record.id, type: "Quotation" });
@@ -1108,7 +1352,7 @@ export default function LedgerQuotationDemo() {
             setDepositPaymentStatuses([false]);
             break;
           }
-          const schedule = Array.isArray(action.schedule) && [2, 3].includes(action.schedule.length)
+          const schedule = Array.isArray(action.schedule) && action.schedule.length >= 1 && action.schedule.length <= 10
             ? action.schedule.map((rate) => Math.min(100, Math.max(0, Number(rate) || 0)))
             : getDefaultDepositSchedule();
           setDepositSchedule(schedule);
@@ -1122,6 +1366,9 @@ export default function LedgerQuotationDemo() {
           break;
         case "set_tax_rate":
           updateTemplate("taxRate", Math.max(0, Number(action.value) || 0));
+          break;
+        case "set_tax_enabled":
+          updateTemplate("taxEnabled", action.enabled !== false);
           break;
         case "set_currency":
           updateTemplate("currency", String(action.value || "$").slice(0, 4));
@@ -1182,8 +1429,8 @@ export default function LedgerQuotationDemo() {
     const selectedPackage = PACKAGE_ITEMS.find((packageItem) => lower === packageItem.buttonLabel.toLowerCase());
     const normalizedNavigationText = lower.replace(/\bopem\b|\boppen\b/g, "open");
     const naturalQuotation = parseNaturalQuotationRequest(text);
-    const collectionMatch = text.match(/\b([23])\s*(?:payment\s+)?collections?\b/i)
-      || text.match(/\bcollections?\s*(?:is|to|:|=)?\s*([23])\b/i);
+    const collectionMatch = text.match(/\b(\d{1,2})\s*(?:payment\s+)?collections?\b/i)
+      || text.match(/\bcollections?\s*(?:is|to|:|=)?\s*(\d{1,2})\b/i);
     const savedQuotationMatch = normalizedNavigationText.match(/\b(?:open|load)\s+(?:previous|saved)?\s*quotation\s*(?:id|#)?\s*(\d+)\b/i);
     const hasOpenIntent = /\b(?:open|show|view|load|go\s+to)\b/i.test(normalizedNavigationText);
     const openHistoryRequested = hasOpenIntent && (
@@ -1226,9 +1473,9 @@ export default function LedgerQuotationDemo() {
     } else if (openSummaryRequested) {
       await openSummaryDashboard();
       addMsg("Opened the quotation summary.", "bot");
-    } else if (collectionMatch) {
+    } else if (collectionMatch && Number(collectionMatch[1]) >= 1 && Number(collectionMatch[1]) <= 10) {
       const collections = Number(collectionMatch[1]);
-      const schedule = [...DEPOSIT_SCHEDULES[collections]];
+      const schedule = createDepositSchedule(collections);
       setDepositEnabled(true);
       setDepositSchedule(schedule);
       setDepositPaymentStatuses(schedule.map(() => false));
@@ -1324,6 +1571,7 @@ export default function LedgerQuotationDemo() {
         note,
         status,
         taxRate,
+        taxEnabled: template.taxEnabled !== false,
         currency: template.currency,
         depositEnabled,
         depositComment,
@@ -1358,7 +1606,7 @@ export default function LedgerQuotationDemo() {
   }
 
   function chooseDepositCollections(collections) {
-    const schedule = [...DEPOSIT_SCHEDULES[collections]];
+    const schedule = createDepositSchedule(collections);
     setDepositEnabled(true);
     setDepositSchedule(schedule);
     setDepositPaymentStatuses(schedule.map(() => false));
@@ -1367,6 +1615,31 @@ export default function LedgerQuotationDemo() {
   function updateDepositInstallment(index, value) {
     const rate = Math.min(100, Math.max(0, Number(value) || 0));
     setDepositSchedule((current) => current.map((item, itemIndex) => itemIndex === index ? rate : item));
+  }
+
+  async function printQuotationWithoutBlankPages() {
+    document.body.classList.add("printing-quotation");
+    const previousDocumentTitle = document.title;
+    document.title = "";
+    const optionalBlocks = [...document.querySelectorAll("[data-print-optional]")];
+    optionalBlocks.forEach((element) => {
+      const hasText = Boolean(element.textContent?.replace(/\s+/g, ""));
+      const hasMedia = Boolean(element.querySelector("img, svg, canvas"));
+      element.classList.toggle("print-empty", !hasText && !hasMedia);
+    });
+    const cleanup = () => {
+      document.title = previousDocumentTitle;
+      document.body.classList.remove("printing-quotation");
+      optionalBlocks.forEach((element) => element.classList.remove("print-empty"));
+    };
+    window.addEventListener("afterprint", cleanup, { once: true });
+    try {
+      await document.fonts?.ready;
+    } catch {
+      // Printing can continue with the browser's available fonts.
+    }
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    window.print();
   }
 
   async function exportPdf() {
@@ -1418,7 +1691,9 @@ export default function LedgerQuotationDemo() {
     } else {
       addMsg(`PDF will open, but the database save failed: ${saved.error}`, "bot");
     }
-    setTimeout(() => window.print(), 150);
+    setTimeout(() => {
+      printQuotationWithoutBlankPages().catch(() => window.print());
+    }, 150);
   }
 
   async function createReceipt() {
@@ -1444,6 +1719,7 @@ export default function LedgerQuotationDemo() {
       tax,
       total,
       taxRate,
+      taxEnabled: template.taxEnabled !== false,
       currency: template.currency,
       depositRate,
       depositAmount,
@@ -1498,7 +1774,8 @@ export default function LedgerQuotationDemo() {
 
   const subtotal = items.reduce((s, it) => s + it.qty * it.price, 0);
   const taxRate = Math.max(0, Number(template.taxRate) || 0);
-  const tax = subtotal * (taxRate / 100);
+  const taxEnabled = template.taxEnabled !== false;
+  const tax = taxEnabled ? subtotal * (taxRate / 100) : 0;
   const total = subtotal + tax;
   const effectivePaymentSchedule = depositEnabled ? depositSchedule : [100];
   const effectivePaymentStatuses = depositEnabled
@@ -1513,6 +1790,51 @@ export default function LedgerQuotationDemo() {
     !normalizedHistoryQuery || [record.quoteNumber, record.client, record.status]
       .some((value) => String(value || "").toLowerCase().includes(normalizedHistoryQuery))
   );
+
+  if (authStatus !== "authenticated") {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <div className="admin-login-shell">
+          {authStatus === "checking" ? (
+            <div className="admin-login-checking">Checking admin session…</div>
+          ) : (
+            <form className="admin-login-card" onSubmit={submitAdminLogin}>
+              <div className="admin-login-mark">JA</div>
+              <h1>Admin login</h1>
+              <p>Sign in to create, export, and manage JOYA Atelier quotations.</p>
+              <div className="admin-login-field">
+                <label htmlFor="admin-username">Username</label>
+                <input
+                  id="admin-username"
+                  value={adminUsernameInput}
+                  autoComplete="username"
+                  autoFocus
+                  required
+                  onChange={(event) => setAdminUsernameInput(event.target.value)}
+                />
+              </div>
+              <div className="admin-login-field">
+                <label htmlFor="admin-password">Password</label>
+                <input
+                  id="admin-password"
+                  type="password"
+                  value={adminPasswordInput}
+                  autoComplete="current-password"
+                  required
+                  onChange={(event) => setAdminPasswordInput(event.target.value)}
+                />
+              </div>
+              {loginError && <div className="admin-login-error">{loginError}</div>}
+              <button className="admin-login-submit" type="submit" disabled={loginLoading}>
+                {loginLoading ? "Signing in…" : "Sign in"}
+              </button>
+            </form>
+          )}
+        </div>
+      </>
+    );
+  }
 
   return (
     <div
@@ -1592,27 +1914,37 @@ export default function LedgerQuotationDemo() {
           <button className="pdf-btn design-btn ledger-mono" onClick={() => setShowTemplateEditor(true)}>
             Design template
           </button>
+          <button className="pdf-btn logout-btn ledger-mono" onClick={logoutAdmin}>
+            Log out
+          </button>
           <button className="pdf-btn ledger-mono" onClick={activePage === "quotation" ? exportPdf : openSummaryDashboard}>
             {activePage === "quotation" ? "⇩ Export PDF" : "↻ Refresh list"}
           </button>
         </div>
 
         <div className={`quote-sheet ${items.some(isPackageItem) ? "package-quote" : ""} ${items.some((item) => packageDefinition(item)?.buttonLabel === "PACKAGE A") ? "package-a-quote" : ""}`} style={{ position: "relative", display: activePage === "quotation" ? "block" : "none" }}>
-
-          <div className="quote-head">
-            <div>
-              <h1 className="ledger-serif">{template.title}</h1>
-              <div className="sub ledger-mono">{template.tagline}</div>
-            </div>
-            <div className="quote-meta ledger-mono">
-              No. <input className="quote-number-input" value={quoteNo} maxLength={24} aria-label="Quotation number" onChange={(e) => setQuoteNo(e.target.value)} />
-              <br />
-              Date: <strong>{today}</strong>
-              <br />
-              Status: <strong>{status}</strong>
-            </div>
-          </div>
-
+          <table className="quote-print-frame">
+            <thead className="quote-print-head">
+              <tr>
+                <td>
+                  <div className="quote-head">
+                    <div>
+                      <h1 className="ledger-serif">{template.title}</h1>
+                      <div className="sub ledger-mono">{template.tagline}</div>
+                    </div>
+                    <div className="quote-meta ledger-mono">
+                      No. <input className="quote-number-input" value={quoteNo} maxLength={24} aria-label="Quotation number" onChange={(e) => setQuoteNo(e.target.value)} />
+                      <strong className="quote-number-print">{quoteNo}</strong>
+                      <br />
+                      Date: <strong>{today}</strong>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
           <div className="quote-parties">
             <div className="party">
               <div className="party-label ledger-mono">From</div>
@@ -1655,7 +1987,13 @@ export default function LedgerQuotationDemo() {
                           <span className="remove-x" onClick={() => removeItem(i)}>remove</span>
                         </div>
                       </div>
-                      <div className="package-scope">{packageDetails(it.name)}</div>
+                      <div className="package-scope">
+                        {packageSections(packageDefinition(it)?.name || it.name).map((section, sectionIndex) => (
+                          <div className="package-section" key={`${sectionIndex}-${section.slice(0, 24)}`}>
+                            {section}
+                          </div>
+                        ))}
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -1680,10 +2018,24 @@ export default function LedgerQuotationDemo() {
               <span>Subtotal</span>
               <span>{money(subtotal, template.currency)}</span>
             </div>
-            <div className="row">
-              <span>Tax ({taxRate}%)</span>
-              <span>{money(tax, template.currency)}</span>
+            <div className="row tax-control">
+              <span>Show tax ({taxRate}%)</span>
+              <label className="tax-switch" title={taxEnabled ? `Hide ${taxRate}% tax` : `Show ${taxRate}% tax`}>
+                <input
+                  type="checkbox"
+                  checked={taxEnabled}
+                  aria-label={`Show tax ${taxRate}%`}
+                  onChange={(event) => updateTemplate("taxEnabled", event.target.checked)}
+                />
+                <span className="tax-slider" aria-hidden="true" />
+              </label>
             </div>
+            {taxEnabled && (
+              <div className="row">
+                <span>Tax ({taxRate}%)</span>
+                <span>{money(tax, template.currency)}</span>
+              </div>
+            )}
             <div className="row grand">
               <span>Total</span>
               <span>{money(total, template.currency)}</span>
@@ -1701,18 +2053,24 @@ export default function LedgerQuotationDemo() {
               </button>
             </div>
             {depositEnabled ? <>
-              <div className="deposit-options" aria-label="Choose number of deposit collections">
-                {[2, 3].map((collections) => (
-                  <button type="button" key={collections} className={`deposit-option ${depositSchedule.length === collections ? "active" : ""}`} aria-pressed={depositSchedule.length === collections} onClick={() => chooseDepositCollections(collections)}>
-                    {collections} collections
-                  </button>
-                ))}
+              <div className="deposit-count">
+                <label htmlFor="deposit-collection-count">Number of collections</label>
+                <input
+                  id="deposit-collection-count"
+                  type="number"
+                  min="1"
+                  max="10"
+                  step="1"
+                  value={depositSchedule.length}
+                  aria-label="Number of payment collections"
+                  onChange={(event) => chooseDepositCollections(event.target.value)}
+                />
               </div>
               <div className="deposit-schedule">
                 {depositSchedule.map((rate, index) => (
                   <div className="deposit-installment" key={index}>
                     <label htmlFor={`deposit-installment-${index}`}>
-                      {depositSchedule.length === 3 ? `งวดที่ ${index + 1} · ${DEFAULT_DEPOSIT_TERMS[index]}` : `${index + 1}${index === 0 ? "st" : "nd"} collection`}
+                      {depositSchedule.length === 3 ? `งวดที่ ${index + 1} · ${DEFAULT_DEPOSIT_TERMS[index]}` : `Collection ${index + 1}`}
                     </label>
                     <input id={`deposit-installment-${index}`} type="number" min="0" max="100" step="1" value={rate} aria-label={`Collection ${index + 1} percentage`} onChange={(e) => updateDepositInstallment(index, e.target.value)} />
                     <strong>{rate}% · {money(total * rate / 100, template.currency)}</strong>
@@ -1734,7 +2092,7 @@ export default function LedgerQuotationDemo() {
             </div>
           </div>
 
-          <div className="note-line">{note ? `"${note}"` : ""}</div>
+          <div className="note-line" data-print-optional>{note ? `"${note}"` : ""}</div>
           <div className="confirmation">
             <div className="confirmation-title ledger-mono">Quotation confirmation</div>
             <input
@@ -1761,7 +2119,11 @@ export default function LedgerQuotationDemo() {
             />
             <div className="confirmation-labels ledger-mono"><span>Name</span><span>Signature</span></div>
           </div>
-          <div className="footer-note ledger-mono">{template.footer}</div>
+                  <div className="footer-note ledger-mono" data-print-optional>{template.footer}</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <div className="summary-page" style={{ display: activePage === "summary" ? "block" : "none" }}>
@@ -1808,7 +2170,7 @@ export default function LedgerQuotationDemo() {
                         const paid = Boolean(record.depositPaymentStatuses?.[index]);
                         return (
                           <button className={`payment-toggle ${paid ? "paid" : ""}`} key={index} onClick={() => toggleDepositPaid(record, index)}>
-                            {depositIsEnabled ? `${index + 1}${index === 0 ? "st" : index === 1 ? "nd" : "rd"} deposit · ${rate}%` : "Cash · 1 time"} · {money(record.total * rate / 100, record.currency)} · {paid ? "Paid ✓" : "Unpaid"}
+                            {depositIsEnabled ? `Collection ${index + 1} · ${rate}%` : "Cash · 1 time"} · {money(record.total * rate / 100, record.currency)} · {paid ? "Paid ✓" : "Unpaid"}
                           </button>
                         );
                       })}
@@ -1939,7 +2301,7 @@ export default function LedgerQuotationDemo() {
             </table>
             <div className="receipt-total ledger-mono">
               <div><span>Subtotal</span><span>{money(receipt.subtotal, receipt.currency)}</span></div>
-              <div><span>Tax ({receipt.taxRate}%)</span><span>{money(receipt.tax, receipt.currency)}</span></div>
+              {receipt.taxEnabled !== false && <div><span>Tax ({receipt.taxRate}%)</span><span>{money(receipt.tax, receipt.currency)}</span></div>}
               <div className="grand"><span>Total paid</span><span>{money(receipt.total, receipt.currency)}</span></div>
             </div>
             <div className="receipt-footer ledger-mono">Thank you · Payment received in full</div>

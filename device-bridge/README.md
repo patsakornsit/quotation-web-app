@@ -8,6 +8,14 @@ Setup
 
 1. Copy `.env.example` to `.env` and set `DEEPSEEK_CHAT_URL` and `DEEPSEEK_API_KEY` for the quotation-only natural-language assistant.
 
+   Also configure the admin login:
+
+```env
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=replace-with-a-strong-password
+AUTH_TOKEN_TTL_SECONDS=43200
+```
+
 2. Install and run:
 
 ```powershell
@@ -72,6 +80,8 @@ curl http://localhost:3001/api/quotations/1
 
 Notes
 -----
+- Quotation, assistant, and device API routes require a valid admin login token.
+- Add the same admin environment variables to the deployed backend service; never add the admin password to the Vite frontend environment.
 - Free-form chat is sent through the backend to DeepSeek and converted into validated quotation actions. Unrelated requests are refused.
 - The API key stays in the backend `.env` and is never sent to the browser.
 
