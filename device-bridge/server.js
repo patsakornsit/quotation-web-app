@@ -151,7 +151,74 @@ async function initializeDatabase() {
         AND max_length <> -1
     )
       ALTER TABLE dbo.quotation_items ALTER COLUMN item_name NVARCHAR(MAX) NOT NULL;
+
+    IF OBJECT_ID(N'dbo.monthly_tax_adjustments', N'U') IS NULL
+    BEGIN
+      CREATE TABLE dbo.monthly_tax_adjustments (
+        tax_month CHAR(7) PRIMARY KEY,
+        input_vat DECIMAL(18,2) NOT NULL CONSTRAINT DF_monthly_tax_input_vat DEFAULT 0,
+        previous_credit DECIMAL(18,2) NOT NULL CONSTRAINT DF_monthly_tax_previous_credit DEFAULT 0,
+        updated_at DATETIME2 NOT NULL CONSTRAINT DF_monthly_tax_updated_at DEFAULT SYSUTCDATETIME()
+      );
+    END;
+
+    IF COL_LENGTH(N'dbo.quotations', N'receipt_created_at') IS NULL
+      ALTER TABLE dbo.quotations ADD receipt_created_at DATETIME2 NULL;
+
+    EXEC sp_executesql N'
+      UPDATE dbo.quotations
+      SET receipt_created_at = SYSUTCDATETIME()
+      WHERE document_type = ''quotation''
+        AND status = ''Receipt created''
+        AND receipt_created_at IS NULL;
+    ';
+
+    IF COL_LENGTH(N'dbo.quotations', N'paid_at') IS NULL
+      ALTER TABLE dbo.quotations ADD paid_at DATETIME2 NULL;
+
+    EXEC sp_executesql N'
+      UPDATE dbo.quotations
+      SET paid_at = SYSUTCDATETIME()
+      WHERE document_type = ''quotation''
+        AND status = ''Paid''
+        AND paid_at IS NULL;
+    ';
+
+    IF COL_LENGTH(N'dbo.quotations', N'deposit_payment_dates_json') IS NULL
+      ALTER TABLE dbo.quotations ADD deposit_payment_dates_json NVARCHAR(MAX) NOT NULL
+        CONSTRAINT DF_quotations_payment_dates DEFAULT '[]';
   `);
+  const missingPaymentDates = await pool.request().query(`
+    SELECT id, status, deposit_payment_statuses_json AS paymentStatusesJson,
+      deposit_payment_dates_json AS paymentDatesJson
+    FROM dbo.quotations
+    WHERE document_type = 'quotation'
+  `);
+  for (const record of missingPaymentDates.recordset) {
+    let statuses = parseJson(record.paymentStatusesJson, []).map(Boolean);
+    const dates = parseJson(record.paymentDatesJson, []);
+    const shouldPayFirstCollection = record.status === 'Paid' && !statuses.some(Boolean);
+    if (shouldPayFirstCollection) {
+      statuses = statuses.length
+        ? statuses.map((paid, index) => index === 0 ? true : paid)
+        : [true];
+    }
+    const needsDateBackfill = statuses.some(Boolean) && !dates.some(Boolean);
+    if (!shouldPayFirstCollection && !needsDateBackfill) continue;
+    const backfilledDates = statuses.map((paid, index) =>
+      paid ? (dates[index] || new Date().toISOString()) : null
+    );
+    const request = pool.request();
+    request.input('id', sql.Int, Number(record.id));
+    request.input('paymentStatuses', sql.NVarChar(sql.MAX), JSON.stringify(statuses));
+    request.input('paymentDates', sql.NVarChar(sql.MAX), JSON.stringify(backfilledDates));
+    await request.query(`
+      UPDATE dbo.quotations SET
+        deposit_payment_statuses_json = @paymentStatuses,
+        deposit_payment_dates_json = @paymentDates
+      WHERE id = @id
+    `);
+  }
   dbPool = pool;
   return dbPool;
 }
@@ -242,6 +309,15 @@ app.use('/api/quotations', authenticateAdmin, async (req, res, next) => {
   }
 });
 
+app.use('/api/tax-summary', authenticateAdmin, async (req, res, next) => {
+  try {
+    await ensureDatabase();
+    return next();
+  } catch (error) {
+    return res.status(503).json({ ok: false, error: `Database connection failed: ${error.message || String(error)}` });
+  }
+});
+
 app.post('/api/quotations', async (req, res) => {
   const record = req.body || {};
   const items = Array.isArray(record.items) ? record.items : [];
@@ -256,12 +332,25 @@ app.post('/api/quotations', async (req, res) => {
     lookupRequest.input('quoteNumber', sql.NVarChar(100), String(record.quoteNumber));
     lookupRequest.input('documentType', sql.NVarChar(30), documentType);
     const existingResult = await lookupRequest.query(`
-      SELECT TOP (1) id
+      SELECT TOP (1) id,
+        deposit_payment_statuses_json AS paymentStatusesJson,
+        deposit_payment_dates_json AS paymentDatesJson
       FROM dbo.quotations WITH (UPDLOCK, HOLDLOCK)
       WHERE quote_number = @quoteNumber AND document_type = @documentType
       ORDER BY id DESC
     `);
-    const existingId = existingResult.recordset[0] ? Number(existingResult.recordset[0].id) : null;
+    const existingRecord = existingResult.recordset[0] || null;
+    const existingId = existingRecord ? Number(existingRecord.id) : null;
+    const nextPaymentStatuses = Array.isArray(record.depositPaymentStatuses)
+      ? record.depositPaymentStatuses.slice(0, 10).map(Boolean)
+      : [];
+    const existingPaymentStatuses = parseJson(existingRecord?.paymentStatusesJson, []).map(Boolean);
+    const existingPaymentDates = parseJson(existingRecord?.paymentDatesJson, []);
+    const nextPaymentDates = nextPaymentStatuses.map((paid, index) => {
+      if (!paid) return null;
+      if (existingPaymentStatuses[index] && existingPaymentDates[index]) return existingPaymentDates[index];
+      return new Date().toISOString();
+    });
     const request = new sql.Request(transaction);
     request.input('quoteNumber', sql.NVarChar(100), String(record.quoteNumber));
     request.input('documentType', sql.NVarChar(30), documentType);
@@ -270,14 +359,15 @@ app.post('/api/quotations', async (req, res) => {
     request.input('subtotal', sql.Decimal(18, 2), Number(record.subtotal) || 0);
     request.input('tax', sql.Decimal(18, 2), Number(record.tax) || 0);
     request.input('total', sql.Decimal(18, 2), Number(record.total) || 0);
-    request.input('currency', sql.NVarChar(10), String(record.currency || '$'));
+    request.input('currency', sql.NVarChar(10), String(record.currency || '฿'));
     request.input('taxRate', sql.Decimal(9, 4), Number(record.taxRate) || 0);
     request.input('depositRate', sql.Decimal(9, 4), Math.min(100, Math.max(0, Number(record.depositRate) || 0)));
     request.input('depositAmount', sql.Decimal(18, 2), Math.max(0, Number(record.depositAmount) || 0));
     request.input('depositEnabled', sql.Bit, record.depositEnabled === false ? 0 : 1);
     request.input('depositComment', sql.NVarChar(sql.MAX), String(record.depositComment || ''));
     request.input('depositSchedule', sql.NVarChar(sql.MAX), JSON.stringify(Array.isArray(record.depositSchedule) ? record.depositSchedule : []));
-    request.input('paymentStatuses', sql.NVarChar(sql.MAX), JSON.stringify(Array.isArray(record.depositPaymentStatuses) ? record.depositPaymentStatuses.map(Boolean) : []));
+    request.input('paymentStatuses', sql.NVarChar(sql.MAX), JSON.stringify(nextPaymentStatuses));
+    request.input('paymentDates', sql.NVarChar(sql.MAX), JSON.stringify(nextPaymentDates));
     request.input('confirmationName', sql.NVarChar(300), String(record.confirmationName || ''));
     request.input('confirmationSignature', sql.NVarChar(sql.MAX), String(record.confirmationSignature || ''));
     request.input('signatureImage', sql.NVarChar(sql.MAX), String(record.confirmationSignatureImage || ''));
@@ -292,9 +382,15 @@ app.post('/api/quotations', async (req, res) => {
           currency = @currency, tax_rate = @taxRate, deposit_rate = @depositRate,
           deposit_amount = @depositAmount, deposit_enabled = @depositEnabled,
           deposit_comment = @depositComment, deposit_schedule_json = @depositSchedule,
-          deposit_payment_statuses_json = @paymentStatuses, confirmation_name = @confirmationName,
+          deposit_payment_statuses_json = @paymentStatuses, deposit_payment_dates_json = @paymentDates,
+          confirmation_name = @confirmationName,
           confirmation_signature = @confirmationSignature, confirmation_signature_image = @signatureImage,
-          note = @note, template_json = @template, exported_at = SYSUTCDATETIME()
+          note = @note, template_json = @template,
+          paid_at = CASE
+            WHEN @status = 'Paid' THEN COALESCE(paid_at, SYSUTCDATETIME())
+            ELSE NULL
+          END,
+          exported_at = SYSUTCDATETIME()
         WHERE id = @id
       `);
       quotationId = existingId;
@@ -306,15 +402,22 @@ app.post('/api/quotations', async (req, res) => {
         INSERT INTO dbo.quotations (
           quote_number, document_type, client, status, subtotal, tax, total, currency, tax_rate,
           deposit_rate, deposit_amount, deposit_enabled, deposit_comment, deposit_schedule_json,
-          deposit_payment_statuses_json, confirmation_name, confirmation_signature,
+          deposit_payment_statuses_json, deposit_payment_dates_json, confirmation_name, confirmation_signature,
           confirmation_signature_image, note, template_json
         )
         OUTPUT INSERTED.id
         VALUES (@quoteNumber, @documentType, @client, @status, @subtotal, @tax, @total, @currency,
           @taxRate, @depositRate, @depositAmount, @depositEnabled, @depositComment, @depositSchedule,
-          @paymentStatuses, @confirmationName, @confirmationSignature, @signatureImage, @note, @template)
+          @paymentStatuses, @paymentDates, @confirmationName, @confirmationSignature, @signatureImage, @note, @template)
       `);
       quotationId = Number(result.recordset[0].id);
+      if (documentType === 'quotation' && String(record.status) === 'Paid') {
+        const paidDateRequest = new sql.Request(transaction);
+        paidDateRequest.input('id', sql.Int, quotationId);
+        await paidDateRequest.query(`
+          UPDATE dbo.quotations SET paid_at = SYSUTCDATETIME() WHERE id = @id
+        `);
+      }
     }
     for (const item of items) {
       const quantity = Number(item.qty) || 0;
@@ -367,6 +470,124 @@ app.get('/api/quotations', async (req, res) => {
     return res.status(500).json({ ok: false, error: error.message || String(error) });
   }
 });
+
+async function handleGetTaxSummary(req, res) {
+  const month = String(req.query.month || '').trim();
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    return res.status(400).json({ ok: false, error: 'month must use YYYY-MM format' });
+  }
+  const [year, monthNumber] = month.split('-').map(Number);
+  const nextYear = monthNumber === 12 ? year + 1 : year;
+  const nextMonthNumber = monthNumber === 12 ? 1 : monthNumber + 1;
+  const monthStart = new Date(`${month}-01T00:00:00+07:00`);
+  const monthEnd = new Date(
+    `${nextYear}-${String(nextMonthNumber).padStart(2, '0')}-01T00:00:00+07:00`
+  );
+  try {
+    const request = dbPool.request();
+    request.input('month', sql.Char(7), month);
+    request.input('monthStart', sql.DateTime2, monthStart);
+    request.input('monthEnd', sql.DateTime2, monthEnd);
+    const result = await request.query(`
+      WITH latest_tax_quotations AS (
+        SELECT *, ROW_NUMBER() OVER (
+          PARTITION BY quote_number, document_type
+          ORDER BY id DESC
+        ) AS duplicateRank
+        FROM dbo.quotations
+        WHERE document_type = 'quotation'
+      )
+      SELECT id, quote_number AS quoteNumber, document_type AS documentType,
+        client, status, subtotal, tax, total, currency, tax_rate AS taxRate,
+        deposit_rate AS depositRate, deposit_enabled AS depositEnabled,
+        deposit_schedule_json AS depositScheduleJson,
+        deposit_payment_dates_json AS depositPaymentDatesJson
+      FROM latest_tax_quotations
+      WHERE duplicateRank = 1
+      ORDER BY id ASC;
+
+      SELECT input_vat AS inputVat, previous_credit AS previousCredit
+      FROM dbo.monthly_tax_adjustments
+      WHERE tax_month = @month;
+    `);
+    const adjustment = result.recordsets[1][0] || { inputVat: 0, previousCredit: 0 };
+    const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+    const paidInstallments = result.recordsets[0].flatMap((record) => {
+      const depositIsEnabled = Boolean(record.depositEnabled);
+      const savedSchedule = parseJson(record.depositScheduleJson, []).map(Number);
+      const schedule = depositIsEnabled
+        ? (savedSchedule.length
+          ? savedSchedule
+          : [Number(record.depositRate) || 30, 100 - (Number(record.depositRate) || 30)])
+        : [100];
+      const paymentDates = parseJson(record.depositPaymentDatesJson, []);
+      return schedule.flatMap((rate, index) => {
+        const paymentDate = paymentDates[index] ? new Date(paymentDates[index]) : null;
+        if (!paymentDate || Number.isNaN(paymentDate.getTime()) || paymentDate < monthStart || paymentDate >= monthEnd) {
+          return [];
+        }
+        const installmentRate = Math.max(0, Number(rate) || 0);
+        return [{
+          ...record,
+          subtotal: roundMoney(Number(record.subtotal || 0) * installmentRate / 100),
+          tax: roundMoney(Number(record.tax || 0) * installmentRate / 100),
+          total: roundMoney(Number(record.total || 0) * installmentRate / 100),
+          taxRate: Number(record.taxRate) || 0,
+          installmentIndex: index + 1,
+          installmentRate,
+          exportedAt: paymentDate.toISOString(),
+        }];
+      });
+    }).sort((left, right) => new Date(left.exportedAt) - new Date(right.exportedAt));
+    return res.json({
+      ok: true,
+      month,
+      timezone: 'Asia/Bangkok',
+      adjustment: {
+        inputVat: Number(adjustment.inputVat) || 0,
+        previousCredit: Number(adjustment.previousCredit) || 0,
+      },
+      records: paidInstallments,
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message || String(error) });
+  }
+}
+
+async function handlePutTaxSummary(req, res) {
+  const month = String(req.body?.month || '').trim();
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    return res.status(400).json({ ok: false, error: 'month must use YYYY-MM format' });
+  }
+  const inputVat = Math.max(0, Number(req.body?.inputVat) || 0);
+  const previousCredit = Math.max(0, Number(req.body?.previousCredit) || 0);
+  try {
+    const request = dbPool.request();
+    request.input('month', sql.Char(7), month);
+    request.input('inputVat', sql.Decimal(18, 2), inputVat);
+    request.input('previousCredit', sql.Decimal(18, 2), previousCredit);
+    await request.query(`
+      MERGE dbo.monthly_tax_adjustments WITH (HOLDLOCK) AS target
+      USING (SELECT @month AS tax_month) AS source
+      ON target.tax_month = source.tax_month
+      WHEN MATCHED THEN UPDATE SET
+        input_vat = @inputVat,
+        previous_credit = @previousCredit,
+        updated_at = SYSUTCDATETIME()
+      WHEN NOT MATCHED THEN INSERT (tax_month, input_vat, previous_credit)
+        VALUES (@month, @inputVat, @previousCredit);
+    `);
+    return res.json({ ok: true, month, adjustment: { inputVat, previousCredit } });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message || String(error) });
+  }
+}
+
+// Keep already-deployed frontends working while they migrate to /api/tax-summary.
+app.get('/api/tax-summary', handleGetTaxSummary);
+app.put('/api/tax-summary', handlePutTaxSummary);
+app.get('/api/quotations/tax-summary', handleGetTaxSummary);
+app.put('/api/quotations/tax-summary', handlePutTaxSummary);
 
 app.get('/api/quotations/next-number', async (req, res) => {
   try {
@@ -448,19 +669,53 @@ app.patch('/api/quotations/:id', async (req, res) => {
   try {
     const readRequest = dbPool.request();
     readRequest.input('id', sql.Int, id);
-    const existingResult = await readRequest.query(`SELECT status, deposit_payment_statuses_json AS depositPaymentStatusesJson FROM dbo.quotations WHERE id = @id`);
+    const existingResult = await readRequest.query(`
+      SELECT status,
+        deposit_payment_statuses_json AS depositPaymentStatusesJson,
+        deposit_payment_dates_json AS depositPaymentDatesJson
+      FROM dbo.quotations WHERE id = @id
+    `);
     const existing = existingResult.recordset[0];
     if (!existing) return res.status(404).json({ ok: false, error: 'Record not found' });
     const nextStatus = req.body.status == null ? existing.status : String(req.body.status);
-    const nextPaymentStatuses = Array.isArray(req.body.depositPaymentStatuses)
+    let nextPaymentStatuses = Array.isArray(req.body.depositPaymentStatuses)
       ? req.body.depositPaymentStatuses.slice(0, 10).map(Boolean)
       : parseJson(existing.depositPaymentStatusesJson, []);
+    if (nextStatus === 'Paid' && !nextPaymentStatuses[0]) {
+      nextPaymentStatuses = nextPaymentStatuses.length
+        ? nextPaymentStatuses.map((paid, index) => index === 0 ? true : paid)
+        : [true];
+    }
+    const previousPaymentStatuses = parseJson(existing.depositPaymentStatusesJson, []).map(Boolean);
+    const previousPaymentDates = parseJson(existing.depositPaymentDatesJson, []);
+    const nextPaymentDates = nextPaymentStatuses.map((paid, index) => {
+      if (!paid) return null;
+      if (previousPaymentStatuses[index] && previousPaymentDates[index]) return previousPaymentDates[index];
+      return new Date().toISOString();
+    });
     const updateRequest = dbPool.request();
     updateRequest.input('id', sql.Int, id);
     updateRequest.input('status', sql.NVarChar(100), nextStatus);
     updateRequest.input('paymentStatuses', sql.NVarChar(sql.MAX), JSON.stringify(nextPaymentStatuses));
-    await updateRequest.query(`UPDATE dbo.quotations SET status = @status, deposit_payment_statuses_json = @paymentStatuses WHERE id = @id`);
-    return res.json({ ok: true, id, status: nextStatus, depositPaymentStatuses: nextPaymentStatuses });
+    updateRequest.input('paymentDates', sql.NVarChar(sql.MAX), JSON.stringify(nextPaymentDates));
+    await updateRequest.query(`
+      UPDATE dbo.quotations SET
+        status = @status,
+        deposit_payment_statuses_json = @paymentStatuses,
+        deposit_payment_dates_json = @paymentDates,
+        paid_at = CASE
+          WHEN @status = 'Paid' THEN COALESCE(paid_at, SYSUTCDATETIME())
+          ELSE NULL
+        END
+      WHERE id = @id
+    `);
+    return res.json({
+      ok: true,
+      id,
+      status: nextStatus,
+      depositPaymentStatuses: nextPaymentStatuses,
+      depositPaymentDates: nextPaymentDates,
+    });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message || String(error) });
   }
@@ -500,7 +755,7 @@ const allowedQuotationActions = new Set([
   'clear_items', 'set_note', 'set_payment_comment', 'set_deposit', 'set_deposit_paid',
   'set_status', 'set_tax_rate', 'set_tax_enabled', 'set_currency', 'set_confirmation_name', 'set_signature_text',
   'remove_signature_image', 'set_template_field', 'reset_template', 'open_summary', 'open_history',
-  'open_template_editor', 'load_quotation', 'create_receipt', 'export_pdf',
+  'open_template_editor', 'load_quotation', 'set_saved_status', 'set_saved_deposit_paid', 'export_pdf',
 ]);
 
 app.post('/api/quotation-assistant', authenticateAdmin, async (req, res) => {
@@ -541,7 +796,8 @@ Allowed actions:
 {"type":"open_history"}
 {"type":"open_template_editor"}
 {"type":"load_quotation","id":1}
-{"type":"create_receipt"}
+{"type":"set_saved_status","quoteNumber":"Q-1048","value":"Draft|Sent|Accepted|Rejected|Receipt created|Paid"}
+{"type":"set_saved_deposit_paid","quoteNumber":"Q-1048","index":1,"paid":true}
 {"type":"export_pdf"}
 The words "collection", "collections", "payment term", "installment", and "deposit" refer to payment terms unless the user explicitly says they are a billable line item.
 "Use 3 collections", "change deposit to 3 collections", or similar MUST produce {"type":"set_deposit","enabled":true,"schedule":[55,25,20]} and MUST NOT add or update an item.
@@ -551,7 +807,10 @@ For 1 to 10 collections, produce a schedule with exactly that many percentages t
 "Comment" or "payment comment" means the Payment comment beside the deposit controls and MUST use set_payment_comment. "Quotation note" or "general note" MUST use set_note.
 Changing a payment comment MUST NOT change deposit enabled state or the deposit schedule.
 Use an empty string to clear a note, payment comment, signature, or other text field when the user asks to remove or clear it.
-Receipt and PDF actions must be returned alone. If the user asks to edit fields and immediately export or create a receipt, apply only the edit actions and tell them to request the export or receipt after the quotation updates.
+PDF actions must be returned alone. This application creates quotations only. The monthly tax summary counts only deposit collections explicitly marked paid, using each collection percentage and paid date; quotation status alone does not add revenue. If the user asks to edit fields and immediately export, apply only the edit actions and tell them to request the export after the quotation updates.
+When the user names a saved quotation number and asks to change its status, use set_saved_status instead of set_status.
+When the user names a saved quotation number and asks to mark a deposit, collection, or installment paid/unpaid, use set_saved_deposit_paid. Its index is one-based.
+Examples: "set Q-1048 to Paid" means set_saved_status. "mark collection 2 of Q-1048 paid" means set_saved_deposit_paid with index 2 and paid true.
 Use current quotation values when the user refers to an existing item or says words like it, first, last, price, quantity, client, or deposit.
 For a new quotation, include new_quotation first and then actions for every detail supplied. Use qty 1 and price 0 only when omitted.
 Do not invent client names, item descriptions, or nonzero prices. Do not create actions outside the allowed list.`;

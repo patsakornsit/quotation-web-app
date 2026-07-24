@@ -125,21 +125,21 @@ body {
   background: #eef3f7; overflow-y: auto; padding: 24px 28px 46px; position: relative;
 }
 .paper-toolbar {
-  display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 18px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 18px;
   position: sticky; top: 0; z-index: 12; padding: 10px;
   background: rgba(255,255,255,.94); backdrop-filter: blur(12px);
   border: 1px solid #dce6ec; border-radius: 18px; box-shadow: 0 8px 24px rgba(33,71,91,.09);
 }
-.paper-toolbar .label { margin-right: auto; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
-.page-tabs { display: flex; padding: 3px; background: #e8f4f8; border-radius: 13px; overflow: hidden; }
-.page-tab { border: 0; border-radius: 10px; background: transparent; color: #39758f; padding: 8px 12px; cursor: pointer; font: 10px 'IBM Plex Mono', monospace; }
+.page-tabs { display: flex; flex: 0 0 auto; padding: 3px; background: #e8f4f8; border-radius: 13px; }
+.page-tab { flex: 0 0 auto; border: 0; border-radius: 10px; background: transparent; color: #39758f; padding: 8px 12px; cursor: pointer; white-space: nowrap; font: 10px 'IBM Plex Mono', monospace; }
 .page-tab.active { background: var(--accent-gold); color: white; box-shadow: 0 4px 10px rgba(38,155,200,.24); }
 .pdf-btn {
   background: var(--accent-gold); color: white; border: none; padding: 9px 14px; border-radius: 12px;
   font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
 }
 .pdf-btn:hover { background: #167ea8; }
-.toolbar-actions { display: flex; gap: 8px; }
+.toolbar-actions { display: flex; flex: 1 1 520px; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.toolbar-actions .pdf-btn { white-space: nowrap; }
 .design-btn { background: #edf3f6; color: var(--ink); border: 0; }
 .design-btn:hover { background: #dceaf0; color: var(--ink); }
 .history-btn { background: #e5f5fb; color: #157ea8; }
@@ -386,6 +386,32 @@ table.items tbody td:first-child {
 .summary-page-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--ink); padding-bottom: 14px; }
 .summary-page-head h1 { margin: 0; font-size: 29px; }
 .summary-page-head p { margin: 4px 0 0; color: var(--ink-soft); font-size: 11px; }
+.tax-summary-card { margin-top: 22px; border: 1px solid #b9dbe8; border-radius: 20px; background: #f5fbfd; overflow: hidden; }
+.tax-summary-top { display: flex; justify-content: space-between; gap: 18px; align-items: end; padding: 20px; background: linear-gradient(135deg, #249ec8, #127ba5); color: white; }
+.tax-summary-top h2 { margin: 0; font-size: 23px; }
+.tax-summary-top p { margin: 4px 0 0; font-size: 9px; opacity: .85; }
+.tax-month-field { display: grid; gap: 5px; min-width: 170px; font-size: 8px; text-transform: uppercase; letter-spacing: .1em; }
+.tax-month-field input { border: 1px solid rgba(255,255,255,.7); border-radius: 9px; background: white; color: var(--ink); padding: 8px 10px; font: 11px 'IBM Plex Mono', monospace; }
+.tax-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #d7e8ee; border-bottom: 1px solid #d7e8ee; }
+.tax-kpi { padding: 15px; background: white; }
+.tax-kpi span { display: block; min-height: 22px; color: var(--ink-soft); font-size: 8px; text-transform: uppercase; letter-spacing: .08em; }
+.tax-kpi strong { display: block; margin-top: 5px; color: #168db7; font-size: 17px; }
+.tax-calculation { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 12px; padding: 18px 20px; }
+.tax-input { display: grid; gap: 6px; color: var(--ink-soft); font-size: 8px; text-transform: uppercase; letter-spacing: .08em; }
+.tax-input input { min-width: 0; border: 1px solid #bad0d8; border-radius: 9px; background: white; color: var(--ink); padding: 9px 10px; font: 12px 'IBM Plex Mono', monospace; }
+.tax-result { border-radius: 13px; padding: 12px 14px; background: #e4f4f9; }
+.tax-result span, .tax-result small { display: block; color: var(--ink-soft); font-size: 8px; text-transform: uppercase; letter-spacing: .08em; }
+.tax-result strong { display: block; margin: 5px 0; color: #126f96; font-size: 20px; }
+.tax-result.credit { background: #e8f4ec; }
+.tax-result.credit strong { color: #39734f; }
+.tax-note { margin: 0; padding: 0 20px 18px; color: #5d6870; font-size: 9px; line-height: 1.55; }
+.tax-ledger { padding: 0 20px 20px; overflow-x: auto; }
+.tax-ledger h3 { margin: 0 0 10px; font-size: 15px; }
+.tax-ledger table { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 9px; }
+.tax-ledger th, .tax-ledger td { padding: 8px 6px; border-bottom: 1px solid #d7e1e5; text-align: left; }
+.tax-ledger th { color: var(--ink-soft); font-size: 7px; text-transform: uppercase; letter-spacing: .08em; }
+.tax-ledger .num { text-align: right; }
+.tax-ledger-empty { padding: 12px 0; color: var(--ink-soft); font-size: 10px; }
 .summary-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0; }
 .summary-kpi { border: 1px solid #dce8ed; border-radius: 16px; background: #f7fbfd; padding: 16px; }
 .summary-kpi span { display: block; color: var(--ink-soft); font-size: 8px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 5px; }
@@ -405,7 +431,24 @@ table.items tbody td:first-child {
 .payment-tracker { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; padding-top: 11px; border-top: 1px solid #c9c0a8; }
 .payment-toggle { border: 1px solid #a9a18e; background: transparent; color: var(--ink); border-radius: 3px; padding: 6px 9px; cursor: pointer; font: 9.5px 'IBM Plex Mono', monospace; }
 .payment-toggle.paid { background: #39734f; border-color: #39734f; color: white; }
+.payment-toggle:disabled { cursor: not-allowed; opacity: .78; }
 .summary-error { margin-top: 14px; padding: 10px; background: #f4dcd7; color: #8b3027; font-size: 11px; }
+
+@media screen and (min-width: 761px) {
+  html, body, #root { height: 100%; overflow: hidden; }
+  .ledger-app {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .chat-side {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .chat-log { min-height: 0; }
+  .paper-side { min-height: 0; }
+}
 
 @media (max-width: 760px) {
   html, body, #root { height: auto; min-height: 100%; }
@@ -433,11 +476,11 @@ table.items tbody td:first-child {
   .history-row { grid-template-columns: 1fr 1fr; }
   .record-actions { grid-column: 1 / -1; }
   .record-actions button { flex: 1; }
-  .paper-toolbar { flex-wrap: wrap; align-items: stretch; border-radius: 16px; }
-  .paper-toolbar .label { display: none; }
+  .paper-toolbar { align-items: stretch; border-radius: 16px; }
   .page-tabs { flex: 1 1 100%; width: 100%; }
   .page-tab { flex: 1; }
-  .pdf-btn { flex: 1 1 28%; padding: 9px 7px; font-size: 8px; }
+  .toolbar-actions { flex: 1 1 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .pdf-btn { width: 100%; padding: 9px 7px; font-size: 8px; }
   .quote-sheet, .summary-page { padding: 18px 14px; border-radius: 18px; }
   .quote-head { gap: 12px; }
   .quote-head h1 { font-size: 25px; }
@@ -462,6 +505,10 @@ table.items tbody td:first-child {
   .template-grid { grid-template-columns: 1fr; }
   .template-field.wide { grid-column: auto; }
   .summary-kpis { grid-template-columns: 1fr; gap: 8px; }
+  .tax-summary-top { align-items: stretch; flex-direction: column; }
+  .tax-month-field { min-width: 0; }
+  .tax-kpis { grid-template-columns: 1fr 1fr; }
+  .tax-calculation { grid-template-columns: 1fr; }
   .summary-record-main { grid-template-columns: 1fr 1fr; }
   .summary-actions { grid-template-columns: 1fr; }
 }
@@ -589,7 +636,7 @@ const DEFAULT_TEMPLATE = {
   tagline: "generated in chat, priced on paper",
   companyName: "JOYA Atelier",
   footer: "Ledger demo · this preview is what gets exported to PDF",
-  currency: "$",
+  currency: "฿",
   taxRate: 7,
   taxEnabled: true,
   paperColor: "#FFFFFF",
@@ -821,6 +868,7 @@ const API_BASE_URL = String(
 ).replace(/\/$/, "");
 const DEVICE_API_ENDPOINT = `${API_BASE_URL}/api/device`;
 const QUOTATION_API_ENDPOINT = `${API_BASE_URL}/api/quotations`;
+const TAX_SUMMARY_API_ENDPOINT = `${API_BASE_URL}/api/tax-summary`;
 const QUOTATION_ASSISTANT_ENDPOINT = `${API_BASE_URL}/api/quotation-assistant`;
 const AUTH_LOGIN_ENDPOINT = `${API_BASE_URL}/api/auth/login`;
 const AUTH_VERIFY_ENDPOINT = `${API_BASE_URL}/api/auth/verify`;
@@ -879,6 +927,21 @@ function savedDate(value) {
   if (!value) return "";
   const parsed = new Date(value.includes("T") ? value : `${value.replace(" ", "T")}Z`);
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString();
+}
+
+function currentBangkokMonth() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  return `${year}-${month}`;
+}
+
+function thaiBahtRecord(record) {
+  return ["฿", "THB", "BAHT"].includes(String(record.currency || "").trim().toUpperCase());
 }
 
 function parseNaturalQuotationRequest(text) {
@@ -954,6 +1017,43 @@ async function getSavedQuotations() {
     return { ok: true, records };
   } catch (error) {
     return { ok: false, error: error.message || String(error), records: [] };
+  }
+}
+
+async function getMonthlyTaxSummary(month) {
+  try {
+    const response = await fetch(`${TAX_SUMMARY_API_ENDPOINT}?month=${encodeURIComponent(month)}`, {
+      headers: authenticatedHeaders(),
+    });
+    const result = await parseApiResponse(response);
+    if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    return {
+      ok: true,
+      records: result.records || [],
+      quotations: result.quotations || [],
+      adjustment: result.adjustment || {},
+    };
+  } catch (error) {
+    const message = error.message || String(error);
+    const deploymentHint = /Invalid record id|Cannot GET|404/i.test(message)
+      ? "The backend is an older deployment. Redeploy device-bridge with the new /api/tax-summary route."
+      : message;
+    return { ok: false, error: deploymentHint, records: [] };
+  }
+}
+
+async function saveMonthlyTaxAdjustment(month, adjustment) {
+  try {
+    const response = await fetch(TAX_SUMMARY_API_ENDPOINT, {
+      method: "PUT",
+      headers: authenticatedHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ month, ...adjustment }),
+    });
+    const result = await parseApiResponse(response);
+    if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    return { ok: true, adjustment: result.adjustment };
+  } catch (error) {
+    return { ok: false, error: error.message || String(error) };
   }
 }
 
@@ -1079,6 +1179,17 @@ export default function LedgerQuotationDemo() {
   const [historyQuery, setHistoryQuery] = useState("");
   const [loadingRecordId, setLoadingRecordId] = useState(null);
   const [deletingRecordId, setDeletingRecordId] = useState(null);
+  const [taxMonth, setTaxMonth] = useState(currentBangkokMonth);
+  const [taxRecords, setTaxRecords] = useState([]);
+  const [taxLoading, setTaxLoading] = useState(false);
+  const [taxError, setTaxError] = useState("");
+  const [taxAdjustments, setTaxAdjustments] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("ledger-tax-adjustments") || "{}");
+    } catch {
+      return {};
+    }
+  });
   const logRef = useRef(null);
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 
@@ -1089,6 +1200,10 @@ export default function LedgerQuotationDemo() {
   useEffect(() => {
     localStorage.setItem("ledger-quotation-template", JSON.stringify(template));
   }, [template]);
+
+  useEffect(() => {
+    localStorage.setItem("ledger-tax-adjustments", JSON.stringify(taxAdjustments));
+  }, [taxAdjustments]);
 
   useEffect(() => {
     let active = true;
@@ -1185,13 +1300,71 @@ export default function LedgerQuotationDemo() {
   async function openSummaryDashboard() {
     setActivePage("summary");
     setHistoryLoading(true);
+    setTaxLoading(true);
     setHistoryError("");
-    const result = await getSavedQuotations();
+    setTaxError("");
+    const [result, taxResult] = await Promise.all([
+      getSavedQuotations(),
+      getMonthlyTaxSummary(taxMonth),
+    ]);
     setHistoryLoading(false);
+    setTaxLoading(false);
     if (result.ok) {
       setHistoryRecords(result.records);
     } else {
       setHistoryError(`Could not load saved quotations: ${result.error}`);
+    }
+    if (taxResult.ok) {
+      setTaxRecords(taxResult.records);
+      setTaxAdjustments((current) => ({
+        ...current,
+        [taxMonth]: {
+          inputVat: Number(taxResult.adjustment?.inputVat) || 0,
+          previousCredit: Number(taxResult.adjustment?.previousCredit) || 0,
+        },
+      }));
+    } else {
+      setTaxError(`Could not load monthly tax summary: ${taxResult.error}`);
+    }
+  }
+
+  async function changeTaxMonth(nextMonth) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(nextMonth)) return;
+    setTaxMonth(nextMonth);
+    setTaxLoading(true);
+    setTaxError("");
+    const result = await getMonthlyTaxSummary(nextMonth);
+    setTaxLoading(false);
+    if (result.ok) {
+      setTaxRecords(result.records);
+      setTaxAdjustments((current) => ({
+        ...current,
+        [nextMonth]: {
+          inputVat: Number(result.adjustment?.inputVat) || 0,
+          previousCredit: Number(result.adjustment?.previousCredit) || 0,
+        },
+      }));
+    } else {
+      setTaxError(`Could not load monthly tax summary: ${result.error}`);
+    }
+  }
+
+  function updateTaxAdjustment(field, value) {
+    const nextValue = Math.max(0, Number(value) || 0);
+    setTaxAdjustments((current) => ({
+      ...current,
+      [taxMonth]: { ...(current[taxMonth] || {}), [field]: nextValue },
+    }));
+  }
+
+  async function persistTaxAdjustment() {
+    const adjustment = taxAdjustments[taxMonth] || {};
+    const result = await saveMonthlyTaxAdjustment(taxMonth, {
+      inputVat: Math.max(0, Number(adjustment.inputVat) || 0),
+      previousCredit: Math.max(0, Number(adjustment.previousCredit) || 0),
+    });
+    if (!result.ok) {
+      setTaxError(`Could not save monthly VAT adjustment: ${result.error}`);
     }
   }
 
@@ -1202,6 +1375,27 @@ export default function LedgerQuotationDemo() {
     if (!result.ok) {
       setHistoryRecords(previousRecords);
       setHistoryError(`Could not update status: ${result.error}`);
+      return;
+    }
+    const returnedPaymentStatuses = Array.isArray(result.depositPaymentStatuses)
+      ? result.depositPaymentStatuses.map(Boolean)
+      : null;
+    if (returnedPaymentStatuses) {
+      setHistoryRecords((records) => records.map((record) =>
+        record.id === id
+          ? { ...record, status: nextStatus, depositPaymentStatuses: returnedPaymentStatuses }
+          : record
+      ));
+      const changedRecord = previousRecords.find((record) => record.id === id);
+      if (changedRecord && String(changedRecord.quoteNumber).trim().toUpperCase() === String(quoteNo).trim().toUpperCase()) {
+        setDepositPaymentStatuses(returnedPaymentStatuses);
+      }
+    }
+    const taxResult = await getMonthlyTaxSummary(taxMonth);
+    if (taxResult.ok) {
+      setTaxRecords(taxResult.records);
+    } else {
+      setTaxError(`Status updated, but the monthly tax summary could not refresh: ${taxResult.error}`);
     }
   }
 
@@ -1221,6 +1415,10 @@ export default function LedgerQuotationDemo() {
   }
 
   async function toggleDepositPaid(record, installmentIndex) {
+    if (record.status === "Paid" && installmentIndex === 0) {
+      setHistoryError("Collection 1 remains Paid while the quotation status is Paid. Change the status first to correct the payment.");
+      return;
+    }
     const schedule = record.depositSchedule?.length ? record.depositSchedule : [record.depositRate || 30, 100 - (record.depositRate || 30)];
     const currentStatuses = schedule.map((_, index) => Boolean(record.depositPaymentStatuses?.[index]));
     const nextStatuses = currentStatuses.map((paid, index) => index === installmentIndex ? !paid : paid);
@@ -1230,6 +1428,13 @@ export default function LedgerQuotationDemo() {
     if (!result.ok) {
       setHistoryRecords(previousRecords);
       setHistoryError(`Could not update deposit payment: ${result.error}`);
+      return;
+    }
+    const taxResult = await getMonthlyTaxSummary(taxMonth);
+    if (taxResult.ok) {
+      setTaxRecords(taxResult.records);
+    } else {
+      setTaxError(`Deposit updated, but the monthly tax summary could not refresh: ${taxResult.error}`);
     }
   }
 
@@ -1277,6 +1482,85 @@ export default function LedgerQuotationDemo() {
     setLastSaved({ id: record.id, type: "Quotation" });
     setShowHistory(false);
     addMsg(`Loaded quotation ${record.quoteNumber} for ${record.client} from database record #${record.id}.`, "bot");
+  }
+
+  async function updateSavedSummaryRecord({ quoteNumber, nextStatus, installmentIndex, paid }) {
+    const normalizedQuoteNumber = String(quoteNumber || "").trim().toUpperCase();
+    if (!normalizedQuoteNumber) return { ok: false, error: "Enter a quotation number." };
+    const listResult = await getSavedQuotations();
+    if (!listResult.ok) return { ok: false, error: listResult.error };
+    const record = listResult.records.find(
+      (item) => String(item.quoteNumber || "").trim().toUpperCase() === normalizedQuoteNumber
+    );
+    if (!record) return { ok: false, error: `Quotation ${normalizedQuoteNumber} was not found.` };
+
+    const changes = {};
+    let nextPaymentStatuses = record.depositPaymentStatuses || [];
+    if (nextStatus != null) {
+      const allowedStatuses = ["Draft", "Sent", "Accepted", "Rejected", "Receipt created", "Paid"];
+      if (!allowedStatuses.includes(nextStatus)) return { ok: false, error: `"${nextStatus}" is not a valid status.` };
+      changes.status = nextStatus;
+    }
+    if (installmentIndex != null) {
+      const depositIsEnabled = record.depositEnabled !== false;
+      const schedule = depositIsEnabled
+        ? (record.depositSchedule?.length
+          ? record.depositSchedule
+          : [record.depositRate || 30, 100 - (record.depositRate || 30)])
+        : [100];
+      const index = Number(installmentIndex) - 1;
+      if (!Number.isInteger(index) || index < 0 || index >= schedule.length) {
+        return { ok: false, error: `${normalizedQuoteNumber} has ${schedule.length} payment collection(s).` };
+      }
+      nextPaymentStatuses = schedule.map((_, itemIndex) =>
+        itemIndex === index ? paid !== false : Boolean(record.depositPaymentStatuses?.[itemIndex])
+      );
+      changes.depositPaymentStatuses = nextPaymentStatuses;
+    }
+
+    const updateResult = await updateSavedQuotation(record.id, changes);
+    if (!updateResult.ok) return { ok: false, error: updateResult.error };
+    if (Array.isArray(updateResult.depositPaymentStatuses)) {
+      nextPaymentStatuses = updateResult.depositPaymentStatuses.map(Boolean);
+    }
+    const updatedRecord = {
+      ...record,
+      ...(changes.status ? { status: changes.status } : {}),
+      ...((changes.depositPaymentStatuses || Array.isArray(updateResult.depositPaymentStatuses))
+        ? { depositPaymentStatuses: nextPaymentStatuses }
+        : {}),
+    };
+    setHistoryRecords((current) => {
+      const exists = current.some((item) => item.id === record.id);
+      return exists
+        ? current.map((item) => item.id === record.id ? updatedRecord : item)
+        : current;
+    });
+    if (String(quoteNo).trim().toUpperCase() === normalizedQuoteNumber) {
+      if (changes.status) setStatus(changes.status);
+      if (changes.depositPaymentStatuses || Array.isArray(updateResult.depositPaymentStatuses)) {
+        setDepositPaymentStatuses(nextPaymentStatuses);
+      }
+    }
+    const taxResult = await getMonthlyTaxSummary(taxMonth);
+    if (taxResult.ok) {
+      setTaxRecords(taxResult.records);
+    }
+
+    if (changes.status) {
+      return { ok: true, message: `Changed ${normalizedQuoteNumber} status to ${changes.status}.` };
+    }
+    const appliedPaid = Boolean(nextPaymentStatuses[Number(installmentIndex) - 1]);
+    if (paid === false && appliedPaid) {
+      return {
+        ok: true,
+        message: `Collection ${installmentIndex} of ${normalizedQuoteNumber} remains Paid because the quotation status is Paid. Change the status first to mark it unpaid.`,
+      };
+    }
+    return {
+      ok: true,
+      message: `Marked collection ${installmentIndex} of ${normalizedQuoteNumber} ${appliedPaid ? "paid" : "unpaid"}.`,
+    };
   }
 
   async function applyQuotationActions(actions) {
@@ -1362,6 +1646,13 @@ export default function LedgerQuotationDemo() {
         case "set_status":
           if (["Draft", "Sent", "Accepted", "Rejected", "Receipt created", "Paid"].includes(String(action.value))) {
             setStatus(String(action.value));
+            if (String(action.value) === "Paid") {
+              setDepositPaymentStatuses((current) =>
+                current.some(Boolean)
+                  ? current
+                  : (current.length ? current.map((paid, index) => index === 0) : [true])
+              );
+            }
           }
           break;
         case "set_tax_rate":
@@ -1409,9 +1700,23 @@ export default function LedgerQuotationDemo() {
         case "load_quotation":
           if (Number.isInteger(Number(action.id)) && Number(action.id) > 0) await loadPreviousQuotation(Number(action.id));
           break;
-        case "create_receipt":
-          await createReceipt();
+        case "set_saved_status": {
+          const summaryResult = await updateSavedSummaryRecord({
+            quoteNumber: action.quoteNumber,
+            nextStatus: String(action.value || ""),
+          });
+          if (!summaryResult.ok) addMsg(`Could not update the summary: ${summaryResult.error}`, "bot");
           break;
+        }
+        case "set_saved_deposit_paid": {
+          const summaryResult = await updateSavedSummaryRecord({
+            quoteNumber: action.quoteNumber,
+            installmentIndex: Number(action.index),
+            paid: action.paid !== false,
+          });
+          if (!summaryResult.ok) addMsg(`Could not update the summary: ${summaryResult.error}`, "bot");
+          break;
+        }
         case "export_pdf":
           await exportPdf();
           break;
@@ -1432,6 +1737,21 @@ export default function LedgerQuotationDemo() {
     const collectionMatch = text.match(/\b(\d{1,2})\s*(?:payment\s+)?collections?\b/i)
       || text.match(/\bcollections?\s*(?:is|to|:|=)?\s*(\d{1,2})\b/i);
     const savedQuotationMatch = normalizedNavigationText.match(/\b(?:open|load)\s+(?:previous|saved)?\s*quotation\s*(?:id|#)?\s*(\d+)\b/i);
+    const savedDepositAfterMatch = text.match(/\b(?:deposit|collection|installment)\s*(\d{1,2})\b[\s\S]*?\b(?:of|for|on)?\s*(Q-?\d+)\b[\s\S]*?\b(paid|unpaid)\b/i);
+    const savedDepositBeforeMatch = text.match(/\b(Q-?\d+)\b[\s\S]*?\b(?:deposit|collection|installment)\s*(\d{1,2})\b[\s\S]*?\b(paid|unpaid)\b/i);
+    const savedDepositCommand = savedDepositAfterMatch
+      ? { index: Number(savedDepositAfterMatch[1]), quoteNumber: savedDepositAfterMatch[2], paid: savedDepositAfterMatch[3].toLowerCase() === "paid" }
+      : savedDepositBeforeMatch
+        ? { index: Number(savedDepositBeforeMatch[2]), quoteNumber: savedDepositBeforeMatch[1], paid: savedDepositBeforeMatch[3].toLowerCase() === "paid" }
+        : null;
+    const statusValuesPattern = "(Receipt created|Draft|Sent|Accepted|Rejected|Paid)";
+    const savedStatusAfterMatch = text.match(new RegExp(`\\b(Q-?\\d+)\\b[\\s\\S]*?\\b(?:status\\s*(?:to|=)?\\s*)?${statusValuesPattern}\\b`, "i"));
+    const savedStatusBeforeMatch = text.match(new RegExp(`\\bstatus\\b[\\s\\S]*?\\b(Q-?\\d+)\\b[\\s\\S]*?\\b${statusValuesPattern}\\b`, "i"));
+    const savedStatusCommand = savedStatusBeforeMatch
+      ? { quoteNumber: savedStatusBeforeMatch[1], status: savedStatusBeforeMatch[2] }
+      : savedStatusAfterMatch
+        ? { quoteNumber: savedStatusAfterMatch[1], status: savedStatusAfterMatch[2] }
+        : null;
     const hasOpenIntent = /\b(?:open|show|view|load|go\s+to)\b/i.test(normalizedNavigationText);
     const openHistoryRequested = hasOpenIntent && (
       /\b(?:previous|saved)\b[\s\S]*\bquotations?\b/i.test(normalizedNavigationText)
@@ -1440,7 +1760,22 @@ export default function LedgerQuotationDemo() {
     );
     const openSummaryRequested = hasOpenIntent && /\bsummary\b/i.test(normalizedNavigationText);
 
-    if (selectedPackage) {
+    if (savedDepositCommand) {
+      const result = await updateSavedSummaryRecord({
+        quoteNumber: savedDepositCommand.quoteNumber.replace(/^Q(?=\d)/i, "Q-"),
+        installmentIndex: savedDepositCommand.index,
+        paid: savedDepositCommand.paid,
+      });
+      addMsg(result.ok ? result.message : `Could not update the summary: ${result.error}`, "bot");
+    } else if (savedStatusCommand) {
+      const normalizedStatus = ["Draft", "Sent", "Accepted", "Rejected", "Receipt created", "Paid"]
+        .find((value) => value.toLowerCase() === savedStatusCommand.status.toLowerCase());
+      const result = await updateSavedSummaryRecord({
+        quoteNumber: savedStatusCommand.quoteNumber.replace(/^Q(?=\d)/i, "Q-"),
+        nextStatus: normalizedStatus,
+      });
+      addMsg(result.ok ? result.message : `Could not update the summary: ${result.error}`, "bot");
+    } else if (selectedPackage) {
       setItems((current) => [...current, { name: selectedPackage.name, qty: selectedPackage.qty, price: selectedPackage.price }]);
       updateTemplate("currency", "฿");
       setActivePage("quotation");
@@ -1562,6 +1897,13 @@ export default function LedgerQuotationDemo() {
     } else if (lower.startsWith("status ")) {
       const s = text.slice(7).trim();
       setStatus(s);
+      if (s.toLowerCase() === "paid") {
+        setDepositPaymentStatuses((current) =>
+          current.some(Boolean)
+            ? current
+            : (current.length ? current.map((paid, index) => index === 0) : [true])
+        );
+      }
       addMsg(`Status set to "${s}".`, "bot");
     } else {
       const assistantResult = await interpretQuotationMessage(text, {
@@ -1790,6 +2132,22 @@ export default function LedgerQuotationDemo() {
     !normalizedHistoryQuery || [record.quoteNumber, record.client, record.status]
       .some((value) => String(value || "").toLowerCase().includes(normalizedHistoryQuery))
   );
+  const thaiTaxRecords = taxRecords.filter(thaiBahtRecord);
+  const excludedTaxRecords = taxRecords.filter((record) => !thaiBahtRecord(record));
+  const taxableSales = thaiTaxRecords
+    .filter((record) => Number(record.tax) > 0)
+    .reduce((sum, record) => sum + Number(record.subtotal || 0), 0);
+  const nonVatSales = thaiTaxRecords
+    .filter((record) => Number(record.tax) <= 0)
+    .reduce((sum, record) => sum + Number(record.subtotal || 0), 0);
+  const outputVat = thaiTaxRecords.reduce((sum, record) => sum + Number(record.tax || 0), 0);
+  const grossReceipts = thaiTaxRecords.reduce((sum, record) => sum + Number(record.total || 0), 0);
+  const monthAdjustment = taxAdjustments[taxMonth] || {};
+  const inputVat = Math.max(0, Number(monthAdjustment.inputVat) || 0);
+  const previousCredit = Math.max(0, Number(monthAdjustment.previousCredit) || 0);
+  const netVat = outputVat - inputVat - previousCredit;
+  const vatPayable = Math.max(0, netVat);
+  const vatCredit = Math.max(0, -netVat);
 
   if (authStatus !== "authenticated") {
     return (
@@ -1907,19 +2265,20 @@ export default function LedgerQuotationDemo() {
             <button className={`page-tab ${activePage === "quotation" ? "active" : ""}`} onClick={() => setActivePage("quotation")}>Quotation</button>
             <button className={`page-tab ${activePage === "summary" ? "active" : ""}`} onClick={openSummaryDashboard}>Summary</button>
           </div>
-          <span className="label ledger-mono">{activePage === "quotation" ? "Live preview" : "Quotation overview"}</span>
-          <button className="pdf-btn history-btn ledger-mono" onClick={openQuotationHistory}>
-            Previous quotations
-          </button>
-          <button className="pdf-btn design-btn ledger-mono" onClick={() => setShowTemplateEditor(true)}>
-            Design template
-          </button>
-          <button className="pdf-btn logout-btn ledger-mono" onClick={logoutAdmin}>
-            Log out
-          </button>
-          <button className="pdf-btn ledger-mono" onClick={activePage === "quotation" ? exportPdf : openSummaryDashboard}>
-            {activePage === "quotation" ? "⇩ Export PDF" : "↻ Refresh list"}
-          </button>
+          <div className="toolbar-actions">
+            <button className="pdf-btn history-btn ledger-mono" onClick={openQuotationHistory}>
+              Previous quotations
+            </button>
+            <button className="pdf-btn design-btn ledger-mono" onClick={() => setShowTemplateEditor(true)}>
+              Design template
+            </button>
+            <button className="pdf-btn logout-btn ledger-mono" onClick={logoutAdmin}>
+              Log out
+            </button>
+            <button className="pdf-btn ledger-mono" onClick={activePage === "quotation" ? exportPdf : openSummaryDashboard}>
+              {activePage === "quotation" ? "⇩ Export PDF" : "↻ Refresh list"}
+            </button>
+          </div>
         </div>
 
         <div className={`quote-sheet ${items.some(isPackageItem) ? "package-quote" : ""} ${items.some((item) => packageDefinition(item)?.buttonLabel === "PACKAGE A") ? "package-a-quote" : ""}`} style={{ position: "relative", display: activePage === "quotation" ? "block" : "none" }}>
@@ -2129,10 +2488,105 @@ export default function LedgerQuotationDemo() {
         <div className="summary-page" style={{ display: activePage === "summary" ? "block" : "none" }}>
           <div className="summary-dashboard-head">
             <div>
-              <h1 className="ledger-serif">All quotations</h1>
-              <p className="ledger-mono">Review quotation status and deposit payments</p>
+              <h1 className="ledger-serif">Business summary</h1>
+              <p className="ledger-mono">Monthly VAT preparation and quotation tracking</p>
             </div>
             <button className="ledger-mono" onClick={openSummaryDashboard}>Refresh</button>
+          </div>
+          <section className="tax-summary-card" aria-labelledby="tax-summary-title">
+            <div className="tax-summary-top">
+              <div>
+                <h2 className="ledger-serif" id="tax-summary-title">Monthly tax summary</h2>
+                <p className="ledger-mono">Paid deposit collections · Bangkok time · Thai baht only</p>
+              </div>
+              <label className="tax-month-field ledger-mono">
+                Tax month
+                <input
+                  type="month"
+                  value={taxMonth}
+                  onChange={(event) => changeTaxMonth(event.target.value)}
+                />
+              </label>
+            </div>
+            {taxError && <div className="summary-error ledger-mono">{taxError}</div>}
+            {taxLoading ? (
+              <div className="history-empty ledger-mono">Loading monthly tax records…</div>
+            ) : (
+              <>
+                <div className="tax-kpis ledger-mono">
+                  <div className="tax-kpi"><span>Taxable sales before VAT</span><strong>{money(taxableSales, "฿")}</strong></div>
+                  <div className="tax-kpi"><span>Output VAT collected</span><strong>{money(outputVat, "฿")}</strong></div>
+                  <div className="tax-kpi"><span>Sales without VAT</span><strong>{money(nonVatSales, "฿")}</strong></div>
+                  <div className="tax-kpi"><span>Paid installments incl. VAT</span><strong>{money(grossReceipts, "฿")}</strong></div>
+                </div>
+                <div className="tax-calculation ledger-mono">
+                  <label className="tax-input">
+                    Input VAT from valid tax invoices
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={inputVat}
+                      onChange={(event) => updateTaxAdjustment("inputVat", event.target.value)}
+                      onBlur={persistTaxAdjustment}
+                    />
+                  </label>
+                  <label className="tax-input">
+                    VAT credit carried forward
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={previousCredit}
+                      onChange={(event) => updateTaxAdjustment("previousCredit", event.target.value)}
+                      onBlur={persistTaxAdjustment}
+                    />
+                  </label>
+                  <div className={`tax-result ${vatCredit > 0 ? "credit" : ""}`}>
+                    <span>{vatCredit > 0 ? "Estimated VAT credit" : "Estimated VAT payable"}</span>
+                    <strong>{money(vatCredit > 0 ? vatCredit : vatPayable, "฿")}</strong>
+                    <small>Output VAT − input VAT − prior credit</small>
+                  </div>
+                </div>
+                <p className="tax-note ledger-mono">
+                  Preparation aid only: only deposit collections explicitly marked “Paid” are counted, using each collection percentage. The unpaid balance and quotation status are excluded. Verify the tax point, valid tax invoices,
+                  adjustments, exemptions, and carried credits with your accountant before filing ภ.พ.30.
+                  {excludedTaxRecords.length > 0 ? ` ${excludedTaxRecords.length} non-THB record(s) are excluded.` : ""}
+                </p>
+                <div className="tax-ledger">
+                  <h3 className="ledger-serif">Paid collections counted ({thaiTaxRecords.length})</h3>
+                  {thaiTaxRecords.length === 0 ? (
+                    <div className="tax-ledger-empty ledger-mono">No Thai-baht deposit collections were marked “Paid” in this month.</div>
+                  ) : (
+                    <table className="ledger-mono">
+                      <thead>
+                        <tr>
+                          <th>Paid date</th><th>Quotation</th><th>Collection</th><th>Client</th>
+                          <th className="num">Before VAT</th><th className="num">VAT</th><th className="num">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {thaiTaxRecords.map((record) => (
+                          <tr key={`${record.id}-${record.installmentIndex}`}>
+                            <td>{savedDate(record.exportedAt)}</td>
+                            <td>{record.quoteNumber}</td>
+                            <td>{record.installmentIndex} · {record.installmentRate}%</td>
+                            <td>{record.client}</td>
+                            <td className="num">{money(Number(record.subtotal || 0), "฿")}</td>
+                            <td className="num">{money(Number(record.tax || 0), "฿")}</td>
+                            <td className="num">{money(Number(record.total || 0), "฿")}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
+          <div className="summary-section">
+            <h2 className="ledger-serif">All quotations</h2>
+            <p className="ledger-mono">Review quotation status and deposit payments. These values are not included in the tax summary.</p>
           </div>
           {historyError && <div className="summary-error ledger-mono">{historyError}</div>}
           {historyLoading ? (
@@ -2169,7 +2623,13 @@ export default function LedgerQuotationDemo() {
                       {schedule.map((rate, index) => {
                         const paid = Boolean(record.depositPaymentStatuses?.[index]);
                         return (
-                          <button className={`payment-toggle ${paid ? "paid" : ""}`} key={index} onClick={() => toggleDepositPaid(record, index)}>
+                          <button
+                            className={`payment-toggle ${paid ? "paid" : ""}`}
+                            key={index}
+                            disabled={record.status === "Paid" && index === 0}
+                            title={record.status === "Paid" && index === 0 ? "Collection 1 is locked while status is Paid" : undefined}
+                            onClick={() => toggleDepositPaid(record, index)}
+                          >
                             {depositIsEnabled ? `Collection ${index + 1} · ${rate}%` : "Cash · 1 time"} · {money(record.total * rate / 100, record.currency)} · {paid ? "Paid ✓" : "Unpaid"}
                           </button>
                         );
@@ -2189,7 +2649,7 @@ export default function LedgerQuotationDemo() {
             <div className="history-head">
               <div>
                 <h2 className="ledger-serif" id="history-title">Previous quotations</h2>
-                <p>Choose a saved quotation to continue editing or create another receipt.</p>
+                <p>Choose a saved quotation to continue editing or update its status.</p>
               </div>
               <button className="icon-btn" aria-label="Close previous quotations" onClick={() => setShowHistory(false)}>×</button>
             </div>
